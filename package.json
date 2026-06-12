@@ -1,6 +1,6 @@
 {
   "name": "@modhamanish/rn-network-logger",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A React Native Network Logger component for debugging network requests and responses.",
   "main": "index.js",
   "types": "index.d.ts",
