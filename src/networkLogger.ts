@@ -55,17 +55,27 @@ function getWebSocketUrl(): string {
   return `ws://${host}:19796`;
 }
 
+let connectionAttempted = false;
+let wasConnectedBefore = false;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 5;
+
 function connect() {
   if (ws) return;
 
   const url = getWebSocketUrl();
-  console.log(`[NetworkInspector] Connecting to WebSocket: ${url}`);
+  if (!connectionAttempted) {
+    console.log(`[NetworkInspector] Initializing connection to: ${url}`);
+    connectionAttempted = true;
+  }
 
   ws = new WebSocket(url);
 
   ws.onopen = () => {
-    console.log('[NetworkInspector] Connected to VS Code Extension inspector.');
+    console.log('[NetworkInspector] Connected to Network Inspector Server.');
     isConnected = true;
+    wasConnectedBefore = true;
+    reconnectAttempts = 0; // Reset counter on successful connection
     // Send queued logs
     while (logQueue.length > 0) {
       const log = logQueue.shift();
@@ -76,12 +86,24 @@ function connect() {
   ws.onclose = () => {
     isConnected = false;
     ws = null;
-    // Automatically attempt reconnection every 3 seconds
-    setTimeout(connect, 3000);
+
+    if (wasConnectedBefore) {
+      console.log('[NetworkInspector] Connection lost. Reconnecting in background...');
+      wasConnectedBefore = false;
+      reconnectAttempts = 0; // Reset counter since it was a live connection drop
+    }
+
+    if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      reconnectAttempts += 1;
+      // Automatically attempt reconnection every 3 seconds
+      setTimeout(connect, 3000);
+    } else {
+      console.log(`[NetworkInspector] Reconnection disabled after ${MAX_RECONNECT_ATTEMPTS} failed attempts. Retrying will resume on the next network request.`);
+    }
   };
 
-  ws.onerror = e => {
-    console.log('[NetworkInspector] Connection error:', e);
+  ws.onerror = () => {
+    // Silent onerror to prevent infinite logs loop in Metro console
   };
 }
 
@@ -93,6 +115,9 @@ function sendLog(payload: Record<string, unknown>) {
     ws.send(message);
   } else {
     logQueue.push(message);
+    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+      reconnectAttempts = 0; // Reset attempts to try again when a new request is sent
+    }
     connect();
   }
 }
