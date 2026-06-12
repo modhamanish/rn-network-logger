@@ -45,7 +45,19 @@ yarn start
 Once your app/bundler is running, simply open your browser and go to:
 👉 **[http://localhost:19796](http://localhost:19796)**
 
-### 2. Manual Startup
+### 2. Auto-Starting in Expo Projects
+Since Expo CLI ignores React Native CLI configuration hooks, the background server will not start automatically on `npx expo start`. You can automate this by adding the inspector command to your script definitions in your project's `package.json`:
+
+```json
+"scripts": {
+  "start": "rn-network-logger & expo start",
+  "android": "rn-network-logger & expo start --android",
+  "ios": "rn-network-logger & expo start --ios"
+}
+```
+Starting your app via `yarn start`, `yarn ios`, or `yarn android` will now automatically launch the inspector server in the background!
+
+### 3. Manual Startup
 If you ever need to start the inspector server manually:
 ```bash
 npx rn-network-logger

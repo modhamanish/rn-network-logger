@@ -61,7 +61,7 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 5;
 
 function connect() {
-  if (ws) return;
+  if (ws || reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) return;
 
   const url = getWebSocketUrl();
   if (!connectionAttempted) {
@@ -98,7 +98,7 @@ function connect() {
       // Automatically attempt reconnection every 3 seconds
       setTimeout(connect, 3000);
     } else {
-      console.log(`[NetworkInspector] Reconnection disabled after ${MAX_RECONNECT_ATTEMPTS} failed attempts. Retrying will resume on the next network request.`);
+      console.log(`[NetworkInspector] Reconnection disabled after ${MAX_RECONNECT_ATTEMPTS} failed attempts. Please reload the app (press 'r') once the inspector server is running.`);
     }
   };
 
@@ -115,9 +115,6 @@ function sendLog(payload: Record<string, unknown>) {
     ws.send(message);
   } else {
     logQueue.push(message);
-    if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      reconnectAttempts = 0; // Reset attempts to try again when a new request is sent
-    }
     connect();
   }
 }
