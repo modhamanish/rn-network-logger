@@ -39,7 +39,7 @@
 
       body {
         font-family:
-          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
           Arial, sans-serif;
         background-color: var(--bg-primary);
         color: var(--text-main);
@@ -224,16 +224,33 @@
       /* Resizer */
       .resizer {
         width: 4px;
+        flex-shrink: 0;
         background-color: var(--border-color);
         cursor: col-resize;
         user-select: none;
         z-index: 20;
-        transition: background-color 0.2s;
+        position: relative;
       }
 
-      .resizer:hover,
-      .resizer.dragging {
+      .resizer::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 2px;
+        width: 1px;
+        background-color: var(--border-color);
+        transition:
+          background-color 0.2s,
+          width 0.2s,
+          left 0.2s;
+      }
+
+      .resizer:hover::after,
+      .resizer.dragging::after {
         background-color: var(--accent-color);
+        width: 3px;
+        left: 1px;
       }
 
       .list-header {
@@ -565,7 +582,7 @@
 
       .json-code {
         font-family:
-          'Fira Code', Consolas, Monaco, 'Courier New', Courier, monospace;
+          "Fira Code", Consolas, Monaco, "Courier New", Courier, monospace;
         white-space: pre-wrap;
         word-break: break-all;
         line-height: 1.5;
@@ -674,7 +691,9 @@
         gap: 8px;
         opacity: 0;
         transform: translateY(20px);
-        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transition:
+          opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+          transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         backdrop-filter: blur(8px);
       }
 
@@ -780,10 +799,23 @@
       </div>
       <footer>
         <div>React Native Network Inspector</div>
-        <div style="display: flex; gap: 12px; align-items: center;">
-          <a href="https://github.com/modhamanish/rn-network-logger/issues" target="_blank" rel="noopener noreferrer">Report Issue</a>
-          <span style="opacity: 0.4;">|</span>
-          <span>Created by <a href="https://www.linkedin.com/in/modha-manish0969" target="_blank" rel="noopener noreferrer">Modha Manish</a></span>
+        <div style="display: flex; gap: 12px; align-items: center">
+          <a
+            href="https://github.com/modhamanish/rn-network-logger/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Report Issue</a
+          >
+          <span style="opacity: 0.4">|</span>
+          <span
+            >Created by
+            <a
+              href="https://www.linkedin.com/in/modha-manish0969"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Modha Manish</a
+            ></span
+          >
         </div>
       </footer>
     </div>
@@ -793,8 +825,8 @@
       const requestsMap = new Map();
       const copyBuffers = new Map();
       let selectedRequestId = null;
-      let currentTab = 'headers';
-      let searchQuery = '';
+      let currentTab = "headers";
+      let searchQuery = "";
       const collapsedSections = {
         general: false,
         requestHeaders: false,
@@ -806,41 +838,41 @@
 
       // VS Code API
       const vscode =
-        typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
+        typeof acquireVsCodeApi !== "undefined" ? acquireVsCodeApi() : null;
 
       // Browser WebSocket support
       if (!vscode) {
         const connectBrowserWS = () => {
-          const wsUrl = `ws://${window.location.host || 'localhost:19796'}/browser`;
-          console.log('[NetworkInspector] Browser connecting to:', wsUrl);
+          const wsUrl = `ws://${window.location.host || "localhost:19796"}/browser`;
+          console.log("[NetworkInspector] Browser connecting to:", wsUrl);
           const socket = new WebSocket(wsUrl);
 
-          socket.addEventListener('open', () => {
-            console.log('[NetworkInspector] Connected to WebSocket server.');
+          socket.addEventListener("open", () => {
+            console.log("[NetworkInspector] Connected to WebSocket server.");
           });
 
-          socket.addEventListener('message', event => {
+          socket.addEventListener("message", (event) => {
             try {
               const msg = JSON.parse(event.data);
-              if (msg.type === 'status') {
+              if (msg.type === "status") {
                 updateStatus(msg.status);
-              } else if (msg.type === 'request') {
+              } else if (msg.type === "request") {
                 handleRequestMessage(msg);
-              } else if (msg.type === 'response') {
+              } else if (msg.type === "response") {
                 handleResponseMessage(msg);
               }
             } catch (err) {
-              console.error('[NetworkInspector] Error parsing message:', err);
+              console.error("[NetworkInspector] Error parsing message:", err);
             }
           });
 
-          socket.addEventListener('close', () => {
-            updateStatus('disconnected');
+          socket.addEventListener("close", () => {
+            updateStatus("disconnected");
             setTimeout(connectBrowserWS, 3000); // Reconnect
           });
 
-          socket.addEventListener('error', err => {
-            console.error('[NetworkInspector] Socket error:', err);
+          socket.addEventListener("error", (err) => {
+            console.error("[NetworkInspector] Socket error:", err);
           });
         };
 
@@ -848,33 +880,33 @@
       }
 
       // Elements
-      const requestList = document.getElementById('requestList');
-      const detailPanel = document.getElementById('detailPanel');
-      const statusDot = document.getElementById('statusDot');
-      const statusText = document.getElementById('statusText');
-      const searchInput = document.getElementById('searchInput');
-      const clearBtn = document.getElementById('clearBtn');
+      const requestList = document.getElementById("requestList");
+      const detailPanel = document.getElementById("detailPanel");
+      const statusDot = document.getElementById("statusDot");
+      const statusText = document.getElementById("statusText");
+      const searchInput = document.getElementById("searchInput");
+      const clearBtn = document.getElementById("clearBtn");
 
       // Message Listener
-      window.addEventListener('message', event => {
+      window.addEventListener("message", (event) => {
         const msg = event.data;
 
-        if (msg.type === 'status') {
+        if (msg.type === "status") {
           updateStatus(msg.status);
-        } else if (msg.type === 'request') {
+        } else if (msg.type === "request") {
           handleRequestMessage(msg);
-        } else if (msg.type === 'response') {
+        } else if (msg.type === "response") {
           handleResponseMessage(msg);
         }
       });
 
       function updateStatus(status) {
-        if (status === 'connected') {
-          statusDot.className = 'status-dot connected';
-          statusText.innerText = 'Connected';
+        if (status === "connected") {
+          statusDot.className = "status-dot connected";
+          statusText.innerText = "Connected";
         } else {
-          statusDot.className = 'status-dot disconnected';
-          statusText.innerText = 'Disconnected';
+          statusDot.className = "status-dot disconnected";
+          statusText.innerText = "Disconnected";
         }
       }
 
@@ -887,7 +919,7 @@
           requestHeaders: req.headers,
           requestBody: req.body,
           requestTimestamp: req.timestamp,
-          status: 'pending',
+          status: "pending",
           responseHeaders: {},
           responseBody: null,
           duration: null,
@@ -923,9 +955,9 @@
           (a, b) => b.requestTimestamp - a.requestTimestamp,
         );
 
-        requestList.innerHTML = '';
+        requestList.innerHTML = "";
 
-        items.forEach(req => {
+        items.forEach((req) => {
           // Filter search query
           const urlObj = parseUrl(req.url, req.baseURL);
           const fullUrl = urlObj.fullUrl.toLowerCase();
@@ -943,18 +975,18 @@
             }
           }
 
-          const div = document.createElement('div');
-          div.className = `request-item ${selectedRequestId === req.id ? 'active' : ''}`;
+          const div = document.createElement("div");
+          div.className = `request-item ${selectedRequestId === req.id ? "active" : ""}`;
           div.onclick = () => selectRequest(req.id);
 
           // Status styling
-          let statusClass = 'pending';
-          let statusText = '...';
-          if (req.status !== 'pending') {
+          let statusClass = "pending";
+          let statusText = "...";
+          if (req.status !== "pending") {
             statusText = req.status;
-            if (req.isError || req.status >= 400) statusClass = 'danger';
-            else if (req.status >= 300) statusClass = 'warning';
-            else if (req.status >= 200) statusClass = 'success';
+            if (req.isError || req.status >= 400) statusClass = "danger";
+            else if (req.status >= 300) statusClass = "warning";
+            else if (req.status >= 200) statusClass = "success";
           }
 
           const timeText = req.duration
@@ -1005,13 +1037,13 @@
         const urlObj = parseUrl(req.url, req.baseURL);
 
         // Status badge
-        let statusClass = 'pending';
-        let statusText = 'Pending';
-        if (req.status !== 'pending') {
+        let statusClass = "pending";
+        let statusText = "Pending";
+        if (req.status !== "pending") {
           statusText = req.status;
-          if (req.isError || req.status >= 400) statusClass = 'danger';
-          else if (req.status >= 300) statusClass = 'warning';
-          else if (req.status >= 200) statusClass = 'success';
+          if (req.isError || req.status >= 400) statusClass = "danger";
+          else if (req.status >= 300) statusClass = "warning";
+          else if (req.status >= 200) statusClass = "success";
         }
 
         detailPanel.innerHTML = `
@@ -1024,7 +1056,7 @@
           <div class="detail-meta-row">
             <div style="display: flex; gap: 16px; align-items: center;">
               <span><strong>Time:</strong> ${new Date(req.requestTimestamp).toLocaleTimeString()}</span>
-              <span><strong>Duration:</strong> ${req.duration ? `${req.duration} ms` : 'Pending'}</span>
+              <span><strong>Duration:</strong> ${req.duration ? `${req.duration} ms` : "Pending"}</span>
             </div>
             <button id="copyCurlBtn" class="btn btn-sm" onclick="copyCurlCommand('${req.id}')">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1037,21 +1069,21 @@
         </div>
 
         <div class="tabs-bar">
-          <div class="tab ${currentTab === 'headers' ? 'active' : ''}" onclick="switchTab('headers')">Headers</div>
-          <div class="tab ${currentTab === 'request' ? 'active' : ''}" onclick="switchTab('request')">Request</div>
-          <div class="tab ${currentTab === 'response' ? 'active' : ''}" onclick="switchTab('response')">Response</div>
+          <div class="tab ${currentTab === "headers" ? "active" : ""}" onclick="switchTab('headers')">Headers</div>
+          <div class="tab ${currentTab === "request" ? "active" : ""}" onclick="switchTab('request')">Request</div>
+          <div class="tab ${currentTab === "response" ? "active" : ""}" onclick="switchTab('response')">Response</div>
         </div>
 
         <div class="detail-body">
-          <div id="headersTab" class="tab-content ${currentTab === 'headers' ? 'active' : ''}">
+          <div id="headersTab" class="tab-content ${currentTab === "headers" ? "active" : ""}">
             <div class="info-section">
               <div class="info-section-header" onclick="toggleSection('general')">
                 <div class="info-section-title">
-                  <span class="chevron-icon ${collapsedSections.general ? 'collapsed' : ''}">▼</span>
+                  <span class="chevron-icon ${collapsedSections.general ? "collapsed" : ""}">▼</span>
                   General Info
                 </div>
               </div>
-              <div class="section-content ${collapsedSections.general ? 'collapsed' : ''}">
+              <div class="section-content ${collapsedSections.general ? "collapsed" : ""}">
                 <table class="key-value-table">
                   <tr><td class="key">Request URL</td><td class="value">${urlObj.fullUrl}</td></tr>
                   <tr><td class="key">Request Method</td><td class="value">${req.method}</td></tr>
@@ -1063,11 +1095,11 @@
             <div class="info-section">
               <div class="info-section-header" onclick="toggleSection('requestHeaders')">
                 <div class="info-section-title">
-                  <span class="chevron-icon ${collapsedSections.requestHeaders ? 'collapsed' : ''}">▼</span>
+                  <span class="chevron-icon ${collapsedSections.requestHeaders ? "collapsed" : ""}">▼</span>
                   Request Headers
                 </div>
               </div>
-              <div class="section-content ${collapsedSections.requestHeaders ? 'collapsed' : ''}">
+              <div class="section-content ${collapsedSections.requestHeaders ? "collapsed" : ""}">
                 ${renderHeadersTable(req.requestHeaders)}
               </div>
             </div>
@@ -1075,51 +1107,51 @@
             <div class="info-section">
               <div class="info-section-header" onclick="toggleSection('responseHeaders')">
                 <div class="info-section-title">
-                  <span class="chevron-icon ${collapsedSections.responseHeaders ? 'collapsed' : ''}">▼</span>
+                  <span class="chevron-icon ${collapsedSections.responseHeaders ? "collapsed" : ""}">▼</span>
                   Response Headers
                 </div>
               </div>
-              <div class="section-content ${collapsedSections.responseHeaders ? 'collapsed' : ''}">
+              <div class="section-content ${collapsedSections.responseHeaders ? "collapsed" : ""}">
                 ${renderHeadersTable(req.responseHeaders)}
               </div>
             </div>
           </div>
 
-          <div id="requestTab" class="tab-content ${currentTab === 'request' ? 'active' : ''}">
+          <div id="requestTab" class="tab-content ${currentTab === "request" ? "active" : ""}">
             <div class="info-section">
               <div class="info-section-header" onclick="toggleSection('queryParameters')">
                 <div class="info-section-title">
-                  <span class="chevron-icon ${collapsedSections.queryParameters ? 'collapsed' : ''}">▼</span>
+                  <span class="chevron-icon ${collapsedSections.queryParameters ? "collapsed" : ""}">▼</span>
                   Query Parameters
                 </div>
               </div>
-              <div class="section-content ${collapsedSections.queryParameters ? 'collapsed' : ''}">
+              <div class="section-content ${collapsedSections.queryParameters ? "collapsed" : ""}">
                 ${renderQueryParameters(urlObj.fullUrl)}
               </div>
             </div>
             <div class="info-section">
               <div class="info-section-header" onclick="toggleSection('payloadBody')">
                 <div class="info-section-title">
-                  <span class="chevron-icon ${collapsedSections.payloadBody ? 'collapsed' : ''}">▼</span>
+                  <span class="chevron-icon ${collapsedSections.payloadBody ? "collapsed" : ""}">▼</span>
                   Payload Body
                 </div>
               </div>
-              <div class="section-content ${collapsedSections.payloadBody ? 'collapsed' : ''}">
-                ${renderJSONViewer(req.requestBody, 'copyReqBody')}
+              <div class="section-content ${collapsedSections.payloadBody ? "collapsed" : ""}">
+                ${renderJSONViewer(req.requestBody, "copyReqBody")}
               </div>
             </div>
           </div>
 
-          <div id="responseTab" class="tab-content ${currentTab === 'response' ? 'active' : ''}">
+          <div id="responseTab" class="tab-content ${currentTab === "response" ? "active" : ""}">
             <div class="info-section">
               <div class="info-section-header" onclick="toggleSection('responseBody')">
                 <div class="info-section-title">
-                  <span class="chevron-icon ${collapsedSections.responseBody ? 'collapsed' : ''}">▼</span>
+                  <span class="chevron-icon ${collapsedSections.responseBody ? "collapsed" : ""}">▼</span>
                   Response Body
                 </div>
               </div>
-              <div class="section-content ${collapsedSections.responseBody ? 'collapsed' : ''}">
-                ${renderJSONViewer(req.responseBody, 'copyResBody')}
+              <div class="section-content ${collapsedSections.responseBody ? "collapsed" : ""}">
+                ${renderJSONViewer(req.responseBody, "copyResBody")}
               </div>
             </div>
           </div>
@@ -1129,12 +1161,18 @@
 
       function switchTab(tabName) {
         currentTab = tabName;
-        document.querySelectorAll('.tab').forEach(el => {
-          el.classList.toggle('active', el.innerText.toLowerCase() === tabName);
+        document.querySelectorAll(".tab").forEach((el) => {
+          el.classList.toggle("active", el.innerText.toLowerCase() === tabName);
         });
-        document.querySelectorAll('.tab-content').forEach(el => {
-          el.classList.toggle('active', el.id === `${tabName}Tab`);
+        document.querySelectorAll(".tab-content").forEach((el) => {
+          el.classList.toggle("active", el.id === `${tabName}Tab`);
         });
+
+        // Reset scroll position of detail-body to top on tab change
+        const detailBody = document.querySelector(".detail-body");
+        if (detailBody) {
+          detailBody.scrollTop = 0;
+        }
       }
 
       function toggleSection(sectionName) {
@@ -1145,9 +1183,9 @@
       // Helper: Parse URL
       function parseUrl(url, baseURL) {
         let fullUrl = url;
-        if (baseURL && !url.startsWith('http')) {
+        if (baseURL && !url.startsWith("http")) {
           const separator =
-            baseURL.endsWith('/') || url.startsWith('/') ? '' : '/';
+            baseURL.endsWith("/") || url.startsWith("/") ? "" : "/";
           fullUrl = `${baseURL}${separator}${url}`;
         }
 
@@ -1168,10 +1206,10 @@
           return '<p style="color: var(--text-dark); italic; padding: 4px;">No headers available</p>';
         }
 
-        let rows = '';
-        Object.keys(headers).forEach(key => {
+        let rows = "";
+        Object.keys(headers).forEach((key) => {
           let val = headers[key];
-          if (typeof val === 'object') val = JSON.stringify(val);
+          if (typeof val === "object") val = JSON.stringify(val);
           rows += `<tr><td class="key">${key}</td><td class="value">${escapeHtml(String(val))}</td></tr>`;
         });
 
@@ -1203,10 +1241,10 @@
           return '<p style="color: var(--text-dark); padding: 4px;">No body payload</p>';
         }
 
-        let displayStr = '';
-        let formattedHtml = '';
+        let displayStr = "";
+        let formattedHtml = "";
 
-        if (typeof body === 'object') {
+        if (typeof body === "object") {
           displayStr = JSON.stringify(body, null, 2);
           formattedHtml = syntaxHighlightJson(displayStr);
         } else {
@@ -1230,44 +1268,44 @@
         return json.replace(
           /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
           function (match) {
-            let cls = 'number';
+            let cls = "number";
             if (/^"/.test(match)) {
               if (/:$/.test(match)) {
-                cls = 'key';
+                cls = "key";
               } else {
-                cls = 'string';
+                cls = "string";
               }
             } else if (/true|false/.test(match)) {
-              cls = 'boolean';
+              cls = "boolean";
             } else if (/null/.test(match)) {
-              cls = 'null';
+              cls = "null";
             }
-            return '<span class="json-' + cls + '">' + match + '</span>';
+            return '<span class="json-' + cls + '">' + match + "</span>";
           },
         );
       }
 
       function escapeHtml(text) {
         return text
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
       }
 
       function escapeString(str) {
         return str
-          .replace(/\\/g, '\\\\')
-          .replace(/`/g, '\\`')
-          .replace(/\$/g, '\\$');
+          .replace(/\\/g, "\\\\")
+          .replace(/`/g, "\\`")
+          .replace(/\$/g, "\\$");
       }
 
       // Toast Helper
       function showToast(message) {
-        const container = document.getElementById('toastContainer');
+        const container = document.getElementById("toastContainer");
         if (!container) return;
 
-        const toast = document.createElement('div');
-        toast.className = 'toast';
+        const toast = document.createElement("div");
+        toast.className = "toast";
         toast.innerHTML = `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="20 6 9 17 4 12"></polyline>
@@ -1278,12 +1316,12 @@
 
         // Trigger transition
         setTimeout(() => {
-          toast.classList.add('show');
+          toast.classList.add("show");
         }, 10);
 
         // Remove toast after 2.5s (2500ms)
         setTimeout(() => {
-          toast.classList.remove('show');
+          toast.classList.remove("show");
           setTimeout(() => {
             toast.remove();
           }, 300); // Wait for transition out
@@ -1306,16 +1344,16 @@
             const btn = document.getElementById(btnId);
             if (btn) {
               const originalText = btn.innerText;
-              btn.innerText = 'Copied!';
-              showToast('Copied to clipboard!');
+              btn.innerText = "Copied!";
+              showToast("Copied to clipboard!");
               setTimeout(() => {
                 btn.innerText = originalText;
               }, 2500);
             }
           })
-          .catch(err => {
-            console.error('Failed to copy: ', err);
-            showToast('Failed to copy to clipboard');
+          .catch((err) => {
+            console.error("Failed to copy: ", err);
+            showToast("Failed to copy to clipboard");
           });
       }
 
@@ -1329,7 +1367,7 @@
         navigator.clipboard
           .writeText(curl)
           .then(() => {
-            const btn = document.getElementById('copyCurlBtn');
+            const btn = document.getElementById("copyCurlBtn");
             if (btn) {
               btn.innerHTML = `
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1337,7 +1375,7 @@
                 </svg>
                 Copied cURL!
               `;
-              showToast('cURL command copied!');
+              showToast("cURL command copied!");
               setTimeout(() => {
                 btn.innerHTML = `
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1349,19 +1387,19 @@
               }, 2500);
             }
           })
-          .catch(err => {
-            console.error('Failed to copy cURL: ', err);
-            showToast('Failed to copy cURL command');
+          .catch((err) => {
+            console.error("Failed to copy cURL: ", err);
+            showToast("Failed to copy cURL command");
           });
       }
 
       function generateCurl(req) {
-        if (!req) return '';
+        if (!req) return "";
         const urlObj = parseUrl(req.url, req.baseURL);
         let curl = `curl -X ${req.method.toUpperCase()} "${urlObj.fullUrl}"`;
 
         if (req.requestHeaders && Object.keys(req.requestHeaders).length > 0) {
-          Object.keys(req.requestHeaders).forEach(key => {
+          Object.keys(req.requestHeaders).forEach((key) => {
             const val = req.requestHeaders[key];
             const escapedVal = String(val).replace(/"/g, '\\"');
             curl += ` \\\n  -H "${key}: ${escapedVal}"`;
@@ -1369,8 +1407,8 @@
         }
 
         if (req.requestBody) {
-          let bodyStr = '';
-          if (typeof req.requestBody === 'object') {
+          let bodyStr = "";
+          if (typeof req.requestBody === "object") {
             bodyStr = JSON.stringify(req.requestBody);
           } else {
             bodyStr = String(req.requestBody);
@@ -1385,12 +1423,12 @@
       }
 
       // Event Handlers
-      searchInput.addEventListener('input', e => {
+      searchInput.addEventListener("input", (e) => {
         searchQuery = e.target.value;
         renderRequestList();
       });
 
-      clearBtn.addEventListener('click', () => {
+      clearBtn.addEventListener("click", () => {
         requestsMap.clear();
         selectedRequestId = null;
         renderRequestList();
@@ -1398,29 +1436,29 @@
       });
 
       // Sidebar Resizer Dragging Logic
-      const resizer = document.getElementById('resizer');
-      const sidebar = document.querySelector('.sidebar');
+      const resizer = document.getElementById("resizer");
+      const sidebar = document.querySelector(".sidebar");
       let isDragging = false;
 
       // Load saved width from localStorage
-      const savedWidth = localStorage.getItem('sidebarWidth');
+      const savedWidth = localStorage.getItem("sidebarWidth");
       if (savedWidth) {
-        sidebar.style.width = savedWidth + 'px';
-        sidebar.style.flex = 'none';
+        sidebar.style.width = savedWidth + "px";
+        sidebar.style.flex = "none";
       }
 
-      resizer.addEventListener('mousedown', e => {
+      resizer.addEventListener("mousedown", (e) => {
         isDragging = true;
-        resizer.classList.add('dragging');
-        document.body.style.cursor = 'col-resize';
-        document.body.style.userSelect = 'none';
+        resizer.classList.add("dragging");
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
       });
 
-      document.addEventListener('mousemove', e => {
+      document.addEventListener("mousemove", (e) => {
         if (!isDragging) return;
 
         const containerOffsetLeft =
-          document.querySelector('.workspace').offsetLeft;
+          document.querySelector(".workspace").offsetLeft;
         const pointerRelativeXpos = e.clientX - containerOffsetLeft;
 
         const minWidth = 250;
@@ -1430,17 +1468,17 @@
           Math.min(maxWidth, pointerRelativeXpos),
         );
 
-        sidebar.style.width = newWidth + 'px';
-        sidebar.style.flex = 'none';
-        localStorage.setItem('sidebarWidth', newWidth);
+        sidebar.style.width = newWidth + "px";
+        sidebar.style.flex = "none";
+        localStorage.setItem("sidebarWidth", newWidth);
       });
 
-      document.addEventListener('mouseup', () => {
+      document.addEventListener("mouseup", () => {
         if (isDragging) {
           isDragging = false;
-          resizer.classList.remove('dragging');
-          document.body.style.cursor = '';
-          document.body.style.userSelect = '';
+          resizer.classList.remove("dragging");
+          document.body.style.cursor = "";
+          document.body.style.userSelect = "";
         }
       });
     </script>
