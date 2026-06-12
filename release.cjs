@@ -23,16 +23,23 @@ const run = (command, cwd = process.cwd()) => {
 const pkgPath = path.join(__dirname, 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 
-console.log(`\x1b[35m\x1b[1mCurrent version: ${pkg.version}\x1b[0m`);
+let npmVersion = '';
+try {
+  npmVersion = execSync(`npm view ${pkg.name} version`, { stdio: ['pipe', 'pipe', 'ignore'] }).toString().trim();
+} catch (error) {
+  // Ignored if package is not published yet or private
+}
 
-rl.question('Select release type (patch, minor, major) [patch]: ', (type) => {
-  const releaseType = type.trim() || 'patch';
-  
-  if (!['patch', 'minor', 'major'].includes(releaseType)) {
-    console.error('\x1b[31mInvalid release type!\x1b[0m');
-    process.exit(1);
-  }
+console.log(`\x1b[35m\x1b[1mLocal version:  ${pkg.version}\x1b[0m`);
+console.log(`\x1b[35m\x1b[1mNPM version:    ${npmVersion || 'Not published yet'}\x1b[0m`);
 
+if (npmVersion && npmVersion !== pkg.version) {
+  console.log(`\x1b[33m\x1b[1mSyncing local package.json version to match NPM version: ${npmVersion}\x1b[0m`);
+  pkg.version = npmVersion;
+  fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+}
+
+const startRelease = (releaseType) => {
   // 1. Build check
   console.log('\n\x1b[33m\x1b[1mStep 1: Build check...\x1b[0m');
   const projectPath = __dirname;
@@ -45,11 +52,15 @@ rl.question('Select release type (patch, minor, major) [patch]: ', (type) => {
   run('npm run build', projectPath);
 
   // 2. Version Bump
-  console.log('\n\x1b[33m\x1b[1mStep 2: Bumping version...\x1b[0m');
-  run(`npm version ${releaseType} --no-git-tag-version`);
-  
-  const newPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-  const newVersion = newPkg.version;
+  let newVersion = pkg.version;
+  if (releaseType) {
+    console.log('\n\x1b[33m\x1b[1mStep 2: Bumping version...\x1b[0m');
+    run(`npm version ${releaseType} --no-git-tag-version`);
+    const newPkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    newVersion = newPkg.version;
+  } else {
+    console.log(`\n\x1b[33m\x1b[1mStep 2: Package not published yet. Skipping version bump (using current version v${newVersion})...\x1b[0m`);
+  }
   
   // 3. Git Operations
   console.log('\n\x1b[33m\x1b[1mStep 3: Git commit and tag...\x1b[0m');
@@ -68,8 +79,22 @@ rl.question('Select release type (patch, minor, major) [patch]: ', (type) => {
       
       console.log(`\n\x1b[32m\x1b[1mSuccessfully released v${newVersion}! 🚀✨\x1b[0m`);
     } else {
-      console.log(`\n\x1b[33mVersion bumped to v${newVersion} and tagged locally, but not pushed/published.\x1b[0m`);
+      console.log(`\n\x1b[33mVersion prepared as v${newVersion} and tagged locally, but not pushed/published.\x1b[0m`);
     }
     rl.close();
   });
-});
+};
+
+if (!npmVersion) {
+  console.log(`\x1b[33mFirst release of this package. Proceeding directly with v${pkg.version}...\x1b[0m`);
+  startRelease(null);
+} else {
+  rl.question('Select release type (patch, minor, major) [patch]: ', (type) => {
+    const releaseType = type.trim() || 'patch';
+    if (!['patch', 'minor', 'major'].includes(releaseType)) {
+      console.error('\x1b[31mInvalid release type!\x1b[0m');
+      process.exit(1);
+    }
+    startRelease(releaseType);
+  });
+}
