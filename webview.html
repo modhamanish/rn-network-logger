@@ -176,8 +176,38 @@
       .workspace {
         display: flex;
         flex-grow: 1;
-        height: calc(100vh - 41px);
+        height: calc(100vh - 65px);
         overflow: hidden;
+      }
+
+      /* Footer */
+      footer {
+        background-color: var(--bg-secondary);
+        border-top: 1px solid var(--border-color);
+        padding: 4px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 11px;
+        color: var(--text-muted);
+        height: 24px;
+        box-sizing: border-box;
+        z-index: 10;
+      }
+
+      footer a {
+        color: var(--accent-color);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      footer a:hover {
+        color: var(--accent-hover);
+        text-decoration: underline;
       }
 
       /* Left Sidebar: Requests List */
@@ -705,6 +735,12 @@
           </div>
         </div>
       </div>
+      <footer>
+        <div>React Native Network Inspector</div>
+        <div>
+          Created by <a href="https://www.linkedin.com/in/modha-manish0969" target="_blank" rel="noopener noreferrer">Modha Manish</a>
+        </div>
+      </footer>
     </div>
 
     <script>

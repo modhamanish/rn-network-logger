@@ -2,6 +2,8 @@
 
 A premium, lightweight React Native Network Inspector that intercepts and logs network requests/responses in development mode and streams them via WebSockets to a web browser-based inspector dashboard.
 
+![Demo Dashboard](./demo/demo.png)
+
 ---
 
 ## Features
