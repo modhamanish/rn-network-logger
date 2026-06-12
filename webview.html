@@ -517,6 +517,7 @@
         border: 1px solid var(--border-color);
         border-radius: 6px;
         overflow: hidden;
+        table-layout: fixed;
       }
 
       .key-value-table td {
@@ -790,6 +791,7 @@
     <script>
       // State management
       const requestsMap = new Map();
+      const copyBuffers = new Map();
       let selectedRequestId = null;
       let currentTab = 'headers';
       let searchQuery = '';
@@ -1212,9 +1214,11 @@
           formattedHtml = escapeHtml(displayStr);
         }
 
+        copyBuffers.set(copyBtnId, displayStr);
+
         return `
         <div class="json-container">
-          <button class="copy-btn" id="${copyBtnId}" onclick="copyToClipboard(\`${escapeString(displayStr)}\`, '${copyBtnId}')">Copy</button>
+          <button class="copy-btn" id="${copyBtnId}" onclick="copyToClipboardFromBuffer('${copyBtnId}')">Copy</button>
           <pre class="json-code"><code>${formattedHtml}</code></pre>
         </div>
       `;
@@ -1284,6 +1288,14 @@
             toast.remove();
           }, 300); // Wait for transition out
         }, 2500);
+      }
+
+      // Copy from buffer
+      function copyToClipboardFromBuffer(btnId) {
+        const text = copyBuffers.get(btnId);
+        if (text !== undefined) {
+          copyToClipboard(text, btnId);
+        }
       }
 
       // Copy to Clipboard
