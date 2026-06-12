@@ -52,7 +52,7 @@ function getWebSocketUrl(): string {
       }
     }
   }
-  return `ws://${host}:3001`;
+  return `ws://${host}:19796`;
 }
 
 function connect() {

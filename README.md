@@ -7,7 +7,7 @@ A premium, lightweight React Native Network Inspector that intercepts and logs n
 ## Features
 
 - ⚡ **Zero Config**: Just import it, and it will automatically intercept global `fetch` and `XMLHttpRequest` requests.
-- 🔗 **WebSocket Live Streaming**: Streams requests instantly to the inspector (runs on Metro server IP/port `3001`).
+- 🔗 **WebSocket Live Streaming**: Streams requests instantly to the inspector (runs on Metro server IP/port `19796`).
 - 🤖 **Dynamic Metro Detection**: Dynamically retrieves the Metro server IP to support simulators, emulators, and physical devices without manual host configuration.
 - 📦 **Axios Support**: Built-in Axios interceptors to support advanced request/response monitoring, with smart deduplication to prevent double logging.
 - 🛡️ **Safe for Production**: All operations are guarded by `__DEV__` checking, ensuring zero performance overhead or package leakage in production builds.
