@@ -1,13 +1,15 @@
 # @modhamanish/rn-network-logger
 
-A premium, lightweight React Native Network Inspector that intercepts and logs network requests/responses in development mode and streams them via WebSockets to the VS Code Extension inspector.
+A premium, lightweight React Native Network Inspector that intercepts and logs network requests/responses in development mode and streams them via WebSockets to a web browser-based inspector dashboard.
 
 ---
 
 ## Features
 
 - ⚡ **Zero Config**: Just import it, and it will automatically intercept global `fetch` and `XMLHttpRequest` requests.
-- 🔗 **WebSocket Live Streaming**: Streams requests instantly to the inspector (runs on Metro server IP/port `19796`).
+- 🔗 **WebSocket Live Streaming**: Streams requests instantly to the local web inspector dashboard (running on port `19796`).
+- 🚀 **Auto-starting Server**: Integrates with the React Native CLI to automatically start the inspector web server in the background when running dev commands like `react-native start`, `run-ios`, or `run-android`.
+- 🖥️ **Web Dashboard**: View, filter, and inspect your network traffic in any browser at `http://localhost:19796`.
 - 🤖 **Dynamic Metro Detection**: Dynamically retrieves the Metro server IP to support simulators, emulators, and physical devices without manual host configuration.
 - 📦 **Axios Support**: Built-in Axios interceptors to support advanced request/response monitoring, with smart deduplication to prevent double logging.
 - 🛡️ **Safe for Production**: All operations are guarded by `__DEV__` checking, ensuring zero performance overhead or package leakage in production builds.
@@ -27,6 +29,26 @@ yarn add @modhamanish/rn-network-logger
 ```
 
 Make sure you have `react` and `react-native` installed in your project (peer dependencies).
+
+---
+
+## Running the Inspector
+
+### 1. Automatic Startup (Recommended)
+Because of the React Native CLI configuration hook, the inspector web server starts automatically in the background on port `19796` as soon as you start your Metro bundler:
+```bash
+yarn start
+# or yarn android / yarn ios
+```
+Once your app/bundler is running, simply open your browser and go to:
+👉 **[http://localhost:19796](http://localhost:19796)**
+
+### 2. Manual Startup
+If you ever need to start the inspector server manually:
+```bash
+npx rn-network-logger
+```
+Then open **[http://localhost:19796](http://localhost:19796)**.
 
 ---
 
@@ -115,4 +137,4 @@ networkLogger.logGenericResponse({
 
 1. **Metro IP Lookup**: On initialization, the logger reads `NativeModules.SourceCode.scriptURL` to locate the active Metro Packager host IP address, ensuring it works seamlessly on physical devices connected to the same Wi-Fi network.
 2. **Global XHR Monkeypatching**: During development, it extends the global `XMLHttpRequest` to capture send payloads and read response blobs asynchronously.
-3. **Queueing mechanism**: If the VS Code extension inspector isn't open or connection drops, logs are safely queued in memory and flushed immediately when reconnection succeeds.
+3. **Queueing mechanism**: If the inspector server isn't open or connection drops, logs are safely queued in memory and flushed immediately when reconnection succeeds.
