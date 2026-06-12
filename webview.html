@@ -1,0 +1,1323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Native Network Inspector</title>
+    <style>
+      :root {
+        --bg-primary: #0f0f11;
+        --bg-secondary: #16161a;
+        --bg-tertiary: #1e1e24;
+        --bg-hover: #25252d;
+        --bg-selected: #2d2d38;
+        --border-color: #282830;
+        --text-main: #e1e1e6;
+        --text-muted: #a0a0b0;
+        --text-dark: #626272;
+        --accent-color: #8c52ff;
+        --accent-hover: #a072ff;
+
+        --status-success: #4caf50;
+        --status-warning: #ffb74d;
+        --status-danger: #ef5350;
+        --status-pending: #888898;
+
+        --method-get: #4caf50;
+        --method-post: #2196f3;
+        --method-put: #ff9800;
+        --method-delete: #f44336;
+        --method-patch: #9c27b0;
+        --method-options: #00bcd4;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: var(--bg-primary);
+        color: var(--text-main);
+        height: 100vh;
+        overflow: hidden;
+        font-size: 13px;
+      }
+
+      /* Layout */
+      .app-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      /* Header Bar */
+      header {
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+        padding: 8px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        z-index: 10;
+      }
+
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo {
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.5px;
+        background: linear-gradient(135deg, var(--accent-color), #00e6ff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .status-container {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--text-muted);
+        background-color: var(--bg-primary);
+        padding: 4px 8px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: var(--status-pending);
+        box-shadow: 0 0 4px var(--status-pending);
+        transition: all 0.3s ease;
+      }
+
+      .status-dot.connected {
+        background-color: var(--status-success);
+        box-shadow: 0 0 8px var(--status-success);
+      }
+
+      .status-dot.disconnected {
+        background-color: var(--status-danger);
+        box-shadow: 0 0 8px var(--status-danger);
+      }
+
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-grow: 1;
+        justify-content: flex-end;
+      }
+
+      .search-input {
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        width: 200px;
+        max-width: 100%;
+        transition: border-color 0.2s;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--accent-color);
+      }
+
+      button.btn {
+        background-color: var(--bg-tertiary);
+        color: var(--text-main);
+        border: 1px solid var(--border-color);
+        padding: 6px 12px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          background-color 0.2s,
+          border-color 0.2s;
+      }
+
+      button.btn:hover {
+        background-color: var(--bg-hover);
+        border-color: var(--text-dark);
+      }
+
+      button.btn-primary {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+
+      button.btn-primary:hover {
+        background-color: var(--accent-hover);
+        border-color: var(--accent-hover);
+      }
+
+      /* Main Workspace */
+      .workspace {
+        display: flex;
+        flex-grow: 1;
+        height: calc(100vh - 41px);
+        overflow: hidden;
+      }
+
+      /* Left Sidebar: Requests List */
+      .sidebar {
+        width: 350px;
+        min-width: 250px;
+        background-color: var(--bg-secondary);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        flex-shrink: 0;
+      }
+
+      /* Resizer */
+      .resizer {
+        width: 4px;
+        background-color: var(--border-color);
+        cursor: col-resize;
+        user-select: none;
+        z-index: 20;
+        transition: background-color 0.2s;
+      }
+
+      .resizer:hover,
+      .resizer.dragging {
+        background-color: var(--accent-color);
+      }
+
+      .list-header {
+        padding: 6px 12px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-muted);
+        font-size: 11px;
+        display: grid;
+        grid-template-columns: 60px 50px 1fr 60px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .request-list {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-bottom: 40px;
+      }
+
+      .request-item {
+        display: grid;
+        grid-template-columns: 60px 50px 1fr 60px;
+        align-items: center;
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border-color);
+        cursor: pointer;
+        user-select: none;
+        transition: background-color 0.15s;
+      }
+
+      .request-item:hover {
+        background-color: var(--bg-hover);
+      }
+
+      .request-item.active {
+        background-color: var(--bg-selected);
+        border-left: 3px solid var(--accent-color);
+        padding-left: 9px;
+      }
+
+      /* Badges & Tags */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 10px;
+        border-radius: 4px;
+        padding: 2px 6px;
+        width: fit-content;
+        text-transform: uppercase;
+      }
+
+      .badge-method {
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+      }
+
+      .badge-method.GET {
+        color: var(--method-get);
+      }
+      .badge-method.POST {
+        color: var(--method-post);
+      }
+      .badge-method.PUT {
+        color: var(--method-put);
+      }
+      .badge-method.DELETE {
+        color: var(--method-delete);
+      }
+      .badge-method.PATCH {
+        color: var(--method-patch);
+      }
+      .badge-method.OPTIONS {
+        color: var(--method-options);
+      }
+
+      .badge-status {
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .badge-status.success {
+        color: var(--status-success);
+      }
+      .badge-status.warning {
+        color: var(--status-warning);
+      }
+      .badge-status.danger {
+        color: var(--status-danger);
+      }
+      .badge-status.pending {
+        color: var(--status-pending);
+      }
+
+      .request-url-path {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-weight: 500;
+        padding-right: 8px;
+      }
+
+      .request-duration {
+        text-align: right;
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+
+      /* Right Panel: Request Details */
+      .detail-panel {
+        flex-grow: 1;
+        background-color: var(--bg-primary);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      /* Empty state */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: var(--text-muted);
+        gap: 12px;
+      }
+
+      .empty-state svg {
+        width: 48px;
+        height: 48px;
+        stroke: var(--text-dark);
+        fill: none;
+      }
+
+      /* Detail header */
+      .detail-header {
+        padding: 16px;
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .detail-title-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .detail-url {
+        font-size: 14px;
+        font-weight: 600;
+        word-break: break-all;
+        flex-grow: 1;
+      }
+
+      .detail-meta-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+
+      /* Tabs */
+      .tabs-bar {
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        padding: 0 16px;
+      }
+
+      .tab {
+        padding: 10px 16px;
+        cursor: pointer;
+        color: var(--text-muted);
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s;
+      }
+
+      .tab:hover {
+        color: var(--text-main);
+        background-color: var(--bg-hover);
+      }
+
+      .tab.active {
+        color: var(--accent-color);
+        border-bottom-color: var(--accent-color);
+      }
+
+      /* Detail content body */
+      .detail-body {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 16px;
+      }
+
+      .tab-content {
+        display: none;
+      }
+
+      .tab-content.active {
+        display: block;
+      }
+
+      /* Tables & Cards */
+      .info-section {
+        margin-bottom: 20px;
+      }
+
+      .info-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        user-select: none;
+        padding: 6px 0;
+        margin-bottom: 8px;
+        transition: all 0.2s;
+      }
+
+      .info-section-header:hover {
+        opacity: 0.8;
+      }
+
+      .info-section-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .info-section-title-mb {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .chevron-icon {
+        font-size: 8px;
+        transition: transform 0.2s ease;
+        display: inline-block;
+        color: var(--text-muted);
+      }
+
+      .chevron-icon.collapsed {
+        transform: rotate(-90deg);
+      }
+
+      .section-content {
+        transition:
+          max-height 0.3s ease,
+          opacity 0.3s ease;
+      }
+
+      .section-content.collapsed {
+        display: none;
+      }
+
+      .key-value-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      .key-value-table td {
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: top;
+        word-break: break-all;
+      }
+
+      .key-value-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .key-value-table td.key {
+        font-weight: 600;
+        width: 180px;
+        color: var(--text-muted);
+        border-right: 1px solid var(--border-color);
+      }
+
+      .key-value-table td.value {
+        font-family: monospace;
+        color: var(--text-main);
+      }
+
+      /* JSON Display */
+      .json-container {
+        position: relative;
+        background-color: transparent;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 12px;
+        overflow-x: auto;
+      }
+
+      button.btn-sm {
+        padding: 3px 8px;
+        font-size: 11px;
+        border-radius: 4px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .json-code {
+        font-family:
+          'Fira Code', Consolas, Monaco, 'Courier New', Courier, monospace;
+        white-space: pre-wrap;
+        word-break: break-all;
+        line-height: 1.5;
+        background: transparent !important;
+      }
+
+      .json-code code {
+        background: transparent !important;
+        background-color: transparent !important;
+      }
+
+      .copy-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        transition: all 0.2s;
+      }
+
+      .copy-btn:hover {
+        color: var(--text-main);
+        background-color: var(--bg-hover);
+      }
+
+      /* JSON highlighting */
+      .json-key {
+        color: #bb86fc;
+        font-weight: bold;
+      }
+      .json-string {
+        color: #a5d6a7;
+      }
+      .json-number {
+        color: #ffb74d;
+      }
+      .json-boolean {
+        color: #81c784;
+      }
+      .json-null {
+        color: #e57373;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border-color);
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--bg-hover);
+      }
+
+      /* Loader */
+      .loader {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(255, 255, 255, 0.2);
+        border-radius: 50%;
+        border-top-color: var(--text-main);
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-container">
+      <header>
+        <div class="header-left">
+          <div class="logo">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polygon points="6 2 18 2 18 6 6 6 6 2"></polygon>
+              <rect x="3" y="6" width="18" height="16" rx="2"></rect>
+              <line x1="10" y1="12" x2="14" y2="12"></line>
+            </svg>
+            Network Inspector
+          </div>
+          <div class="status-container">
+            <div id="statusDot" class="status-dot"></div>
+            <span id="statusText">Disconnected</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="Search requests (url, method)..."
+          />
+          <button id="clearBtn" class="btn">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+            </svg>
+            Clear
+          </button>
+        </div>
+      </header>
+
+      <div class="workspace">
+        <!-- Requests list sidebar -->
+        <div class="sidebar">
+          <div class="list-header">
+            <div>Method</div>
+            <div>Status</div>
+            <div>Path</div>
+            <div style="text-align: right">Time</div>
+          </div>
+          <div class="request-list" id="requestList">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+
+        <!-- Resizer -->
+        <div class="resizer" id="resizer"></div>
+
+        <!-- Detail panel -->
+        <div class="detail-panel" id="detailPanel">
+          <div class="empty-state">
+            <svg
+              viewBox="0 0 24 24"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+            >
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <h3>No Request Selected</h3>
+            <p>
+              Trigger network requests in the React Native app to inspect them.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // State management
+      const requestsMap = new Map();
+      let selectedRequestId = null;
+      let currentTab = 'headers';
+      let searchQuery = '';
+      const collapsedSections = {
+        general: false,
+        requestHeaders: false,
+        responseHeaders: false,
+        queryParameters: false,
+        payloadBody: false,
+        responseBody: false,
+      };
+
+      // VS Code API
+      const vscode =
+        typeof acquireVsCodeApi !== 'undefined' ? acquireVsCodeApi() : null;
+
+      // Browser WebSocket support
+      if (!vscode) {
+        const connectBrowserWS = () => {
+          const wsUrl = `ws://${window.location.host || 'localhost:19796'}/browser`;
+          console.log('[NetworkInspector] Browser connecting to:', wsUrl);
+          const socket = new WebSocket(wsUrl);
+
+          socket.addEventListener('open', () => {
+            console.log('[NetworkInspector] Connected to WebSocket server.');
+          });
+
+          socket.addEventListener('message', event => {
+            try {
+              const msg = JSON.parse(event.data);
+              if (msg.type === 'status') {
+                updateStatus(msg.status);
+              } else if (msg.type === 'request') {
+                handleRequestMessage(msg);
+              } else if (msg.type === 'response') {
+                handleResponseMessage(msg);
+              }
+            } catch (err) {
+              console.error('[NetworkInspector] Error parsing message:', err);
+            }
+          });
+
+          socket.addEventListener('close', () => {
+            updateStatus('disconnected');
+            setTimeout(connectBrowserWS, 3000); // Reconnect
+          });
+
+          socket.addEventListener('error', err => {
+            console.error('[NetworkInspector] Socket error:', err);
+          });
+        };
+
+        connectBrowserWS();
+      }
+
+      // Elements
+      const requestList = document.getElementById('requestList');
+      const detailPanel = document.getElementById('detailPanel');
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const searchInput = document.getElementById('searchInput');
+      const clearBtn = document.getElementById('clearBtn');
+
+      // Message Listener
+      window.addEventListener('message', event => {
+        const msg = event.data;
+
+        if (msg.type === 'status') {
+          updateStatus(msg.status);
+        } else if (msg.type === 'request') {
+          handleRequestMessage(msg);
+        } else if (msg.type === 'response') {
+          handleResponseMessage(msg);
+        }
+      });
+
+      function updateStatus(status) {
+        if (status === 'connected') {
+          statusDot.className = 'status-dot connected';
+          statusText.innerText = 'Connected';
+        } else {
+          statusDot.className = 'status-dot disconnected';
+          statusText.innerText = 'Disconnected';
+        }
+      }
+
+      function handleRequestMessage(req) {
+        const record = {
+          id: req.id,
+          method: req.method,
+          url: req.url,
+          baseURL: req.baseURL,
+          requestHeaders: req.headers,
+          requestBody: req.body,
+          requestTimestamp: req.timestamp,
+          status: 'pending',
+          responseHeaders: {},
+          responseBody: null,
+          duration: null,
+          isError: false,
+        };
+
+        requestsMap.set(req.id, record);
+        renderRequestList();
+        if (selectedRequestId === req.id) {
+          renderDetails();
+        }
+      }
+
+      function handleResponseMessage(res) {
+        const record = requestsMap.get(res.id);
+        if (record) {
+          record.status = res.status;
+          record.responseHeaders = res.headers;
+          record.responseBody = res.body;
+          record.duration = res.duration;
+          record.isError = res.isError || false;
+
+          renderRequestList();
+          if (selectedRequestId === res.id) {
+            renderDetails();
+          }
+        }
+      }
+
+      // Render Requests List
+      function renderRequestList() {
+        const items = Array.from(requestsMap.values()).sort(
+          (a, b) => b.requestTimestamp - a.requestTimestamp,
+        );
+
+        requestList.innerHTML = '';
+
+        items.forEach(req => {
+          // Filter search query
+          const urlObj = parseUrl(req.url, req.baseURL);
+          const fullUrl = urlObj.fullUrl.toLowerCase();
+          const method = req.method.toLowerCase();
+          const status = String(req.status).toLowerCase();
+
+          if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            if (
+              !fullUrl.includes(query) &&
+              !method.includes(query) &&
+              !status.includes(query)
+            ) {
+              return;
+            }
+          }
+
+          const div = document.createElement('div');
+          div.className = `request-item ${selectedRequestId === req.id ? 'active' : ''}`;
+          div.onclick = () => selectRequest(req.id);
+
+          // Status styling
+          let statusClass = 'pending';
+          let statusText = '...';
+          if (req.status !== 'pending') {
+            statusText = req.status;
+            if (req.isError || req.status >= 400) statusClass = 'danger';
+            else if (req.status >= 300) statusClass = 'warning';
+            else if (req.status >= 200) statusClass = 'success';
+          }
+
+          const timeText = req.duration
+            ? `${req.duration}ms`
+            : '<div class="loader"></div>';
+
+          div.innerHTML = `
+          <div><span class="badge badge-method ${req.method}">${req.method}</span></div>
+          <div><span class="badge badge-status ${statusClass}">${statusText}</span></div>
+          <div class="request-url-path" title="${urlObj.fullUrl}">${urlObj.displayPath}</div>
+          <div class="request-duration">${timeText}</div>
+        `;
+
+          requestList.appendChild(div);
+        });
+      }
+
+      function selectRequest(id) {
+        if (selectedRequestId !== id) {
+          selectedRequestId = id;
+          collapsedSections.general = false;
+          collapsedSections.requestHeaders = false;
+          collapsedSections.responseHeaders = false;
+          collapsedSections.queryParameters = false;
+          collapsedSections.payloadBody = false;
+          collapsedSections.responseBody = false;
+        }
+        renderRequestList();
+        renderDetails();
+      }
+
+      // Render Detail View
+      function renderDetails() {
+        const req = requestsMap.get(selectedRequestId);
+        if (!req) {
+          detailPanel.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <h3>No Request Selected</h3>
+            <p>Trigger network requests in the React Native app to inspect them.</p>
+          </div>
+        `;
+          return;
+        }
+
+        const urlObj = parseUrl(req.url, req.baseURL);
+
+        // Status badge
+        let statusClass = 'pending';
+        let statusText = 'Pending';
+        if (req.status !== 'pending') {
+          statusText = req.status;
+          if (req.isError || req.status >= 400) statusClass = 'danger';
+          else if (req.status >= 300) statusClass = 'warning';
+          else if (req.status >= 200) statusClass = 'success';
+        }
+
+        detailPanel.innerHTML = `
+        <div class="detail-header">
+          <div class="detail-title-row">
+            <span class="badge badge-method ${req.method}">${req.method}</span>
+            <span class="badge badge-status ${statusClass}">${statusText}</span>
+            <div class="detail-url">${urlObj.fullUrl}</div>
+          </div>
+          <div class="detail-meta-row">
+            <div style="display: flex; gap: 16px; align-items: center;">
+              <span><strong>Time:</strong> ${new Date(req.requestTimestamp).toLocaleTimeString()}</span>
+              <span><strong>Duration:</strong> ${req.duration ? `${req.duration} ms` : 'Pending'}</span>
+            </div>
+            <button id="copyCurlBtn" class="btn btn-sm" onclick="copyCurlCommand('${req.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy as cURL
+            </button>
+          </div>
+        </div>
+
+        <div class="tabs-bar">
+          <div class="tab ${currentTab === 'headers' ? 'active' : ''}" onclick="switchTab('headers')">Headers</div>
+          <div class="tab ${currentTab === 'request' ? 'active' : ''}" onclick="switchTab('request')">Request</div>
+          <div class="tab ${currentTab === 'response' ? 'active' : ''}" onclick="switchTab('response')">Response</div>
+        </div>
+
+        <div class="detail-body">
+          <div id="headersTab" class="tab-content ${currentTab === 'headers' ? 'active' : ''}">
+            <div class="info-section">
+              <div class="info-section-header" onclick="toggleSection('general')">
+                <div class="info-section-title">
+                  <span class="chevron-icon ${collapsedSections.general ? 'collapsed' : ''}">▼</span>
+                  General Info
+                </div>
+              </div>
+              <div class="section-content ${collapsedSections.general ? 'collapsed' : ''}">
+                <table class="key-value-table">
+                  <tr><td class="key">Request URL</td><td class="value">${urlObj.fullUrl}</td></tr>
+                  <tr><td class="key">Request Method</td><td class="value">${req.method}</td></tr>
+                  <tr><td class="key">Status Code</td><td class="value">${statusText}</td></tr>
+                </table>
+              </div>
+            </div>
+
+            <div class="info-section">
+              <div class="info-section-header" onclick="toggleSection('requestHeaders')">
+                <div class="info-section-title">
+                  <span class="chevron-icon ${collapsedSections.requestHeaders ? 'collapsed' : ''}">▼</span>
+                  Request Headers
+                </div>
+              </div>
+              <div class="section-content ${collapsedSections.requestHeaders ? 'collapsed' : ''}">
+                ${renderHeadersTable(req.requestHeaders)}
+              </div>
+            </div>
+
+            <div class="info-section">
+              <div class="info-section-header" onclick="toggleSection('responseHeaders')">
+                <div class="info-section-title">
+                  <span class="chevron-icon ${collapsedSections.responseHeaders ? 'collapsed' : ''}">▼</span>
+                  Response Headers
+                </div>
+              </div>
+              <div class="section-content ${collapsedSections.responseHeaders ? 'collapsed' : ''}">
+                ${renderHeadersTable(req.responseHeaders)}
+              </div>
+            </div>
+          </div>
+
+          <div id="requestTab" class="tab-content ${currentTab === 'request' ? 'active' : ''}">
+            <div class="info-section">
+              <div class="info-section-header" onclick="toggleSection('queryParameters')">
+                <div class="info-section-title">
+                  <span class="chevron-icon ${collapsedSections.queryParameters ? 'collapsed' : ''}">▼</span>
+                  Query Parameters
+                </div>
+              </div>
+              <div class="section-content ${collapsedSections.queryParameters ? 'collapsed' : ''}">
+                ${renderQueryParameters(urlObj.fullUrl)}
+              </div>
+            </div>
+            <div class="info-section">
+              <div class="info-section-header" onclick="toggleSection('payloadBody')">
+                <div class="info-section-title">
+                  <span class="chevron-icon ${collapsedSections.payloadBody ? 'collapsed' : ''}">▼</span>
+                  Payload Body
+                </div>
+              </div>
+              <div class="section-content ${collapsedSections.payloadBody ? 'collapsed' : ''}">
+                ${renderJSONViewer(req.requestBody, 'copyReqBody')}
+              </div>
+            </div>
+          </div>
+
+          <div id="responseTab" class="tab-content ${currentTab === 'response' ? 'active' : ''}">
+            <div class="info-section">
+              <div class="info-section-header" onclick="toggleSection('responseBody')">
+                <div class="info-section-title">
+                  <span class="chevron-icon ${collapsedSections.responseBody ? 'collapsed' : ''}">▼</span>
+                  Response Body
+                </div>
+              </div>
+              <div class="section-content ${collapsedSections.responseBody ? 'collapsed' : ''}">
+                ${renderJSONViewer(req.responseBody, 'copyResBody')}
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      }
+
+      function switchTab(tabName) {
+        currentTab = tabName;
+        document.querySelectorAll('.tab').forEach(el => {
+          el.classList.toggle('active', el.innerText.toLowerCase() === tabName);
+        });
+        document.querySelectorAll('.tab-content').forEach(el => {
+          el.classList.toggle('active', el.id === `${tabName}Tab`);
+        });
+      }
+
+      function toggleSection(sectionName) {
+        collapsedSections[sectionName] = !collapsedSections[sectionName];
+        renderDetails();
+      }
+
+      // Helper: Parse URL
+      function parseUrl(url, baseURL) {
+        let fullUrl = url;
+        if (baseURL && !url.startsWith('http')) {
+          const separator =
+            baseURL.endsWith('/') || url.startsWith('/') ? '' : '/';
+          fullUrl = `${baseURL}${separator}${url}`;
+        }
+
+        let displayPath = url;
+        try {
+          const parsed = new URL(fullUrl);
+          displayPath = parsed.pathname + parsed.search;
+        } catch (e) {
+          // Fallback if not a valid full URL
+        }
+
+        return { fullUrl, displayPath };
+      }
+
+      // Helper: Render Headers
+      function renderHeadersTable(headers) {
+        if (!headers || Object.keys(headers).length === 0) {
+          return '<p style="color: var(--text-dark); italic; padding: 4px;">No headers available</p>';
+        }
+
+        let rows = '';
+        Object.keys(headers).forEach(key => {
+          let val = headers[key];
+          if (typeof val === 'object') val = JSON.stringify(val);
+          rows += `<tr><td class="key">${key}</td><td class="value">${escapeHtml(String(val))}</td></tr>`;
+        });
+
+        return `<table class="key-value-table">${rows}</table>`;
+      }
+
+      // Helper: Render Query Parameters
+      function renderQueryParameters(urlStr) {
+        try {
+          const url = new URL(urlStr);
+          const params = {};
+          url.searchParams.forEach((value, key) => {
+            params[key] = value;
+          });
+
+          if (Object.keys(params).length === 0) {
+            return '<p style="color: var(--text-dark); padding: 4px;">No query parameters</p>';
+          }
+
+          return renderHeadersTable(params);
+        } catch (e) {
+          return '<p style="color: var(--text-dark); padding: 4px;">No query parameters</p>';
+        }
+      }
+
+      // Helper: JSON Viewer with Highlight
+      function renderJSONViewer(body, copyBtnId) {
+        if (body === null || body === undefined) {
+          return '<p style="color: var(--text-dark); padding: 4px;">No body payload</p>';
+        }
+
+        let displayStr = '';
+        let formattedHtml = '';
+
+        if (typeof body === 'object') {
+          displayStr = JSON.stringify(body, null, 2);
+          formattedHtml = syntaxHighlightJson(displayStr);
+        } else {
+          displayStr = String(body);
+          formattedHtml = escapeHtml(displayStr);
+        }
+
+        return `
+        <div class="json-container">
+          <button class="copy-btn" id="${copyBtnId}" onclick="copyToClipboard(\`${escapeString(displayStr)}\`, '${copyBtnId}')">Copy</button>
+          <pre class="json-code"><code>${formattedHtml}</code></pre>
+        </div>
+      `;
+      }
+
+      // JSON syntax highlighting
+      function syntaxHighlightJson(json) {
+        json = escapeHtml(json);
+        return json.replace(
+          /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g,
+          function (match) {
+            let cls = 'number';
+            if (/^"/.test(match)) {
+              if (/:$/.test(match)) {
+                cls = 'key';
+              } else {
+                cls = 'string';
+              }
+            } else if (/true|false/.test(match)) {
+              cls = 'boolean';
+            } else if (/null/.test(match)) {
+              cls = 'null';
+            }
+            return '<span class="json-' + cls + '">' + match + '</span>';
+          },
+        );
+      }
+
+      function escapeHtml(text) {
+        return text
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      function escapeString(str) {
+        return str
+          .replace(/\\/g, '\\\\')
+          .replace(/`/g, '\\`')
+          .replace(/\$/g, '\\$');
+      }
+
+      // Copy to Clipboard
+      function copyToClipboard(text, btnId) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+              const originalText = btn.innerText;
+              btn.innerText = 'Copied!';
+              setTimeout(() => {
+                btn.innerText = originalText;
+              }, 2000);
+            }
+          })
+          .catch(err => {
+            console.error('Failed to copy: ', err);
+          });
+      }
+
+      function copyCurlCommand(requestId) {
+        const req = requestsMap.get(requestId);
+        if (!req) return;
+
+        const curl = generateCurl(req);
+        if (!curl) return;
+
+        navigator.clipboard
+          .writeText(curl)
+          .then(() => {
+            const btn = document.getElementById('copyCurlBtn');
+            if (btn) {
+              btn.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            Copied cURL!
+          `;
+              setTimeout(() => {
+                btn.innerHTML = `
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              Copy as cURL
+            `;
+              }, 2000);
+            }
+          })
+          .catch(err => {
+            console.error('Failed to copy cURL: ', err);
+          });
+      }
+
+      function generateCurl(req) {
+        if (!req) return '';
+        const urlObj = parseUrl(req.url, req.baseURL);
+        let curl = `curl -X ${req.method.toUpperCase()} "${urlObj.fullUrl}"`;
+
+        if (req.requestHeaders && Object.keys(req.requestHeaders).length > 0) {
+          Object.keys(req.requestHeaders).forEach(key => {
+            const val = req.requestHeaders[key];
+            const escapedVal = String(val).replace(/"/g, '\\"');
+            curl += ` \\\n  -H "${key}: ${escapedVal}"`;
+          });
+        }
+
+        if (req.requestBody) {
+          let bodyStr = '';
+          if (typeof req.requestBody === 'object') {
+            bodyStr = JSON.stringify(req.requestBody);
+          } else {
+            bodyStr = String(req.requestBody);
+          }
+          if (bodyStr) {
+            const escapedBody = bodyStr.replace(/'/g, "'\\''");
+            curl += ` \\\n  -d '${escapedBody}'`;
+          }
+        }
+
+        return curl;
+      }
+
+      // Event Handlers
+      searchInput.addEventListener('input', e => {
+        searchQuery = e.target.value;
+        renderRequestList();
+      });
+
+      clearBtn.addEventListener('click', () => {
+        requestsMap.clear();
+        selectedRequestId = null;
+        renderRequestList();
+        renderDetails();
+      });
+
+      // Sidebar Resizer Dragging Logic
+      const resizer = document.getElementById('resizer');
+      const sidebar = document.querySelector('.sidebar');
+      let isDragging = false;
+
+      // Load saved width from localStorage
+      const savedWidth = localStorage.getItem('sidebarWidth');
+      if (savedWidth) {
+        sidebar.style.width = savedWidth + 'px';
+        sidebar.style.flex = 'none';
+      }
+
+      resizer.addEventListener('mousedown', e => {
+        isDragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+      });
+
+      document.addEventListener('mousemove', e => {
+        if (!isDragging) return;
+
+        const containerOffsetLeft =
+          document.querySelector('.workspace').offsetLeft;
+        const pointerRelativeXpos = e.clientX - containerOffsetLeft;
+
+        const minWidth = 250;
+        const maxWidth = window.innerWidth * 0.75;
+        const newWidth = Math.max(
+          minWidth,
+          Math.min(maxWidth, pointerRelativeXpos),
+        );
+
+        sidebar.style.width = newWidth + 'px';
+        sidebar.style.flex = 'none';
+        localStorage.setItem('sidebarWidth', newWidth);
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (isDragging) {
+          isDragging = false;
+          resizer.classList.remove('dragging');
+          document.body.style.cursor = '';
+          document.body.style.userSelect = '';
+        }
+      });
+    </script>
+  </body>
+</html>
