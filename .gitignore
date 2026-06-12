@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+
+# Logs and system files
+*.log
+.DS_Store
+
+# Local configuration files
+.npmrc
