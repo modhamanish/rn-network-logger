@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-import { NativeModules } from 'react-native';
+import { NativeModules, Platform } from 'react-native';
 
 import { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
@@ -76,6 +76,36 @@ function connect() {
     isConnected = true;
     wasConnectedBefore = true;
     reconnectAttempts = 0; // Reset counter on successful connection
+
+    // Register device info with the server
+    let model = 'Unknown Device';
+    try {
+      if (Platform.OS === 'android') {
+        model = (Platform.constants as any)?.Model || 'Android Device';
+      } else if (Platform.OS === 'ios') {
+        model = Platform.isPad ? 'iPad' : 'iPhone';
+      } else {
+        model = Platform.OS || 'Unknown Device';
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    try {
+      ws?.send(
+        JSON.stringify({
+          type: 'register',
+          deviceInfo: {
+            platform: Platform.OS,
+            version: Platform.Version,
+            model: model,
+          },
+        })
+      );
+    } catch (e) {
+      // ignore
+    }
+
     // Send queued logs
     while (logQueue.length > 0) {
       const log = logQueue.shift();

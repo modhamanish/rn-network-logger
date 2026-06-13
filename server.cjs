@@ -34,13 +34,18 @@ const httpServer = http.createServer((req, res) => {
 
 const wss = new WebSocket.Server({ server: httpServer });
 
+let activeDeviceInfo = null;
+
 function broadcastStatus() {
   const hasAppClient = Array.from(activeClients).some(c => !c.isBrowser);
   const status = hasAppClient ? 'connected' : 'disconnected';
+  if (!hasAppClient) {
+    activeDeviceInfo = null;
+  }
 
   for (const client of activeClients) {
     if (client.isBrowser && client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'status', status }));
+      client.send(JSON.stringify({ type: 'status', status, deviceInfo: activeDeviceInfo }));
     }
   }
 }
@@ -56,16 +61,34 @@ wss.on('connection', (ws, req) => {
   // Send initial status
   const hasAppClient = Array.from(activeClients).some(c => !c.isBrowser);
   const status = hasAppClient ? 'connected' : 'disconnected';
-  ws.send(JSON.stringify({ type: 'status', status }));
+  if (!hasAppClient) {
+    activeDeviceInfo = null;
+  }
+  ws.send(JSON.stringify({ type: 'status', status, deviceInfo: activeDeviceInfo }));
 
   broadcastStatus();
 
   ws.on('message', (message) => {
     try {
+      const msgStr = message.toString();
+      // If we receive a register message from the app, save device info and broadcast it
+      if (!ws.isBrowser) {
+        try {
+          const parsed = JSON.parse(msgStr);
+          if (parsed && parsed.type === 'register') {
+            activeDeviceInfo = parsed.deviceInfo;
+            broadcastStatus();
+            return;
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+
       // Broadcast to all browser clients
       for (const client of activeClients) {
         if (client.isBrowser && client.readyState === WebSocket.OPEN) {
-          client.send(message.toString());
+          client.send(msgStr);
         }
       }
     } catch (err) {

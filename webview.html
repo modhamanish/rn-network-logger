@@ -855,7 +855,7 @@
             try {
               const msg = JSON.parse(event.data);
               if (msg.type === "status") {
-                updateStatus(msg.status);
+                updateStatus(msg.status, msg.deviceInfo);
               } else if (msg.type === "request") {
                 handleRequestMessage(msg);
               } else if (msg.type === "response") {
@@ -892,7 +892,7 @@
         const msg = event.data;
 
         if (msg.type === "status") {
-          updateStatus(msg.status);
+          updateStatus(msg.status, msg.deviceInfo);
         } else if (msg.type === "request") {
           handleRequestMessage(msg);
         } else if (msg.type === "response") {
@@ -900,10 +900,15 @@
         }
       });
 
-      function updateStatus(status) {
+      function updateStatus(status, deviceInfo) {
         if (status === "connected") {
           statusDot.className = "status-dot connected";
-          statusText.innerText = "Connected";
+          if (deviceInfo && deviceInfo.model) {
+            const osName = deviceInfo.platform === "ios" ? "iOS" : (deviceInfo.platform === "android" ? "Android" : deviceInfo.platform);
+            statusText.innerText = `Connected: ${deviceInfo.model} (${osName} ${deviceInfo.version})`;
+          } else {
+            statusText.innerText = "Connected";
+          }
         } else {
           statusDot.className = "status-dot disconnected";
           statusText.innerText = "Disconnected";
