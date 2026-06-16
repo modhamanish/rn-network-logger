@@ -13,7 +13,21 @@
     "type": "git",
     "url": "git+https://github.com/modhamanish/rn-network-logger.git"
   },
-  "keywords": [],
+  "keywords": [
+    "react-native",
+    "network",
+    "logger",
+    "debugging",
+    "http",
+    "requests",
+    "devtools",
+    "inspect",
+    "network-logger",
+    "logging",
+    "monitor",
+    "ios",
+    "android"
+  ],
   "author": "Modha Manish",
   "license": "ISC",
   "bin": {
