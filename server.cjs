@@ -132,4 +132,16 @@ httpServer.listen(port, () => {
   console.log(
     `[NetworkInspector] Open http://localhost:${port} in your browser to inspect network traffic.\n`,
   );
+
+  // Automatically attempt to forward the WebSocket port for connected Android devices/emulators
+  try {
+    const { exec } = require("child_process");
+    exec("adb reverse tcp:19796 tcp:19796", (err) => {
+      if (!err) {
+        console.log("[NetworkInspector] Port 19796 reversed successfully via adb for Android devices/emulators.");
+      }
+    });
+  } catch (e) {
+    // Fail silently if child_process/adb is not available or errors out
+  }
 });

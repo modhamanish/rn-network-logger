@@ -52,6 +52,24 @@ function getWebSocketUrl(): string {
       }
     }
   }
+
+  // On Android, if the host resolves to loopback (localhost or 127.0.0.1),
+  // fallback to 10.0.2.2 (host loopback) if running on an emulator.
+  if (Platform.OS === 'android' && (host === 'localhost' || host === '127.0.0.1')) {
+    const isEmulator =
+      (Platform.constants as any).Fingerprint?.startsWith('generic') ||
+      (Platform.constants as any).Fingerprint?.startsWith('unknown') ||
+      (Platform.constants as any).Model?.includes('google_sdk') ||
+      (Platform.constants as any).Model?.includes('Emulator') ||
+      (Platform.constants as any).Model?.includes('Android SDK built for x86') ||
+      (Platform.constants as any).Brand?.startsWith('generic') ||
+      (Platform.constants as any).Device?.startsWith('generic');
+
+    if (isEmulator) {
+      host = '10.0.2.2';
+    }
+  }
+
   return `ws://${host}:19796`;
 }
 
