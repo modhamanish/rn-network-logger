@@ -1,7 +1,24 @@
 /* eslint-disable no-console */
 import { NativeModules, Platform } from 'react-native';
 
-import { AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+export interface InternalAxiosRequestConfig<T = any> {
+  url?: string;
+  method?: string;
+  baseURL?: string;
+  headers?: any;
+  params?: any;
+  data?: any;
+  [key: string]: any;
+}
+
+export interface AxiosResponse<T = any, D = any> {
+  data: T;
+  status: number;
+  statusText?: string;
+  headers: any;
+  config: InternalAxiosRequestConfig<D>;
+  request?: any;
+}
 
 export interface GenericRequestLog {
   id?: string; // If not provided, a unique ID will be generated
@@ -504,11 +521,175 @@ export function startGlobalInterceptors() {
   global.XMLHttpRequest = InterceptedXHR;
 }
 
+let isFetchIntercepting = false;
+export function startGlobalFetchInterceptor() {
+  if (isFetchIntercepting) return;
+
+  const originalFetch = (globalThis as any).fetch || (global as any).fetch;
+  if (!originalFetch) return;
+
+  isFetchIntercepting = true;
+  console.log('[NetworkInspector] Global fetch interceptor initialized.');
+
+  const interceptedFetch = async function (
+    input: any,
+    init?: any
+  ): Promise<any> {
+    let url = '';
+    let method = 'GET';
+    let headers: Record<string, string> = {};
+    let body: any = undefined;
+
+    try {
+      if (typeof input === 'string') {
+        url = input;
+      } else if (input && typeof input === 'object') {
+        if (typeof input.url === 'string') {
+          url = input.url;
+        } else if (typeof input.toString === 'function') {
+          url = input.toString();
+        }
+        if (input.method) {
+          method = input.method;
+        }
+      }
+
+      // Ignore Metro, WebSocket, Inspector server, symbolicate, hot reload calls
+      if (
+        !url ||
+        url.includes(':19796') ||
+        url.includes(':8081') ||
+        url.includes('/hot') ||
+        url.includes('/symbolicate') ||
+        url.includes('/message')
+      ) {
+        return originalFetch(input, init);
+      }
+
+      if (init) {
+        if (init.method) method = init.method;
+        if (init.headers) {
+          if (typeof init.headers.forEach === 'function') {
+            init.headers.forEach((value: string, key: string) => {
+              headers[key] = value;
+            });
+          } else if (Array.isArray(init.headers)) {
+            init.headers.forEach(([key, value]: [string, string]) => {
+              headers[key] = value;
+            });
+          } else if (typeof init.headers === 'object') {
+            Object.keys(init.headers).forEach(k => {
+              headers[k] = String(init.headers[k]);
+            });
+          }
+        }
+        if (init.body !== undefined) {
+          body = init.body;
+        }
+      }
+
+      // Format body
+      let parsedBody = body;
+      if (typeof body === 'string') {
+        try {
+          parsedBody = JSON.parse(body);
+        } catch {
+          parsedBody = body;
+        }
+      } else if (body && typeof body === 'object') {
+        if (body.constructor && body.constructor.name === 'FormData') {
+          parsedBody = '[FormData]';
+        }
+      }
+
+      const id = generateRequestId();
+      const startTime = Date.now();
+
+      networkLogger.logGenericRequest({
+        id,
+        url,
+        method: method.toUpperCase(),
+        headers,
+        body: parsedBody,
+        timestamp: startTime,
+      });
+
+      try {
+        const response = await originalFetch(input, init);
+        const duration = Date.now() - startTime;
+
+        let responseBody: any = null;
+        try {
+          if (typeof response.clone === 'function') {
+            const cloned = response.clone();
+            const text = await cloned.text();
+            if (text) {
+              if (text.length > 500000) {
+                responseBody = text.slice(0, 500000) + '... [Truncated]';
+              } else {
+                try {
+                  responseBody = JSON.parse(text);
+                } catch {
+                  responseBody = text;
+                }
+              }
+            }
+          }
+        } catch {
+          responseBody = '[Response stream already consumed or binary]';
+        }
+
+        const responseHeaders: Record<string, string> = {};
+        try {
+          if (response.headers && typeof response.headers.forEach === 'function') {
+            response.headers.forEach((val: string, key: string) => {
+              responseHeaders[key] = val;
+            });
+          }
+        } catch {
+          // ignore
+        }
+
+        const status = response.status;
+        const isError = status === 0 || status >= 400;
+
+        networkLogger.logGenericResponse({
+          id,
+          status: status || 0,
+          headers: responseHeaders,
+          body: responseBody || (isError ? 'Network Error' : null),
+          duration,
+          isError,
+        });
+
+        return response;
+      } catch (err: any) {
+        const duration = Date.now() - startTime;
+        networkLogger.logGenericResponse({
+          id,
+          status: 0,
+          headers: {},
+          body: err?.message || 'Network Error',
+          duration,
+          isError: true,
+        });
+        throw err;
+      }
+    } catch {
+      return originalFetch(input, init);
+    }
+  };
+
+  (global as any).fetch = interceptedFetch;
+  (globalThis as any).fetch = interceptedFetch;
+}
+
 // Auto-connect and start global interception in development mode on import
 if (__DEV__) {
   connect();
   try {
     startGlobalInterceptors();
+    startGlobalFetchInterceptor();
   } catch (e) {
     console.error(
       '[NetworkInspector] Failed to initialize global interceptor:',
