@@ -583,21 +583,122 @@
       .json-code {
         font-family:
           "Fira Code", Consolas, Monaco, "Courier New", Courier, monospace;
-        white-space: pre-wrap;
-        word-break: break-all;
         line-height: 1.5;
         background: transparent !important;
+        font-size: 13px;
+        padding-top: 4px;
       }
 
       .json-code code {
         background: transparent !important;
         background-color: transparent !important;
+        font-family: inherit;
       }
 
-      .copy-btn {
+      .json-line {
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      .json-block {
+        padding-left: 20px;
+      }
+
+      .json-comma {
+        color: var(--text-main);
+      }
+
+      /* Collapsible Elements */
+      .json-collapsible {
+        position: relative;
+        display: inline;
+      }
+
+      .json-toggle-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 13px;
+        height: 13px;
+        font-size: 8px;
+        color: var(--text-dark);
+        cursor: pointer;
+        user-select: none;
+        border-radius: 2px;
+        margin-right: 2px;
+        transition: transform 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+        vertical-align: middle;
+      }
+
+      .json-toggle-btn:hover {
+        color: #ffffff;
+        background-color: var(--bg-hover);
+      }
+
+      .json-collapsible.collapsed > .json-toggle-btn {
+        transform: rotate(-90deg);
+        color: var(--accent-color);
+      }
+
+      .json-bracket {
+        color: var(--text-main);
+        cursor: pointer;
+        transition: color 0.15s;
+      }
+
+      .json-bracket:hover {
+        color: var(--accent-color);
+      }
+
+      .json-placeholder {
+        display: none;
+        color: var(--accent-hover);
+        background-color: rgba(140, 82, 255, 0.12);
+        border: 1px solid rgba(140, 82, 255, 0.25);
+        border-radius: 4px;
+        padding: 0 5px;
+        margin: 0 2px;
+        font-size: 11px;
+        font-family: inherit;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.15s ease;
+      }
+
+      .json-placeholder:hover {
+        color: #ffffff;
+        background-color: rgba(140, 82, 255, 0.25);
+        border-color: var(--accent-color);
+      }
+
+      .json-collapsible.collapsed > .json-open-bracket {
+        display: none;
+      }
+
+      .json-collapsible.collapsed > .json-close-bracket {
+        display: none;
+      }
+
+      .json-collapsible.collapsed > .json-block {
+        display: none;
+      }
+
+      .json-collapsible.collapsed > .json-placeholder {
+        display: inline-block;
+      }
+
+      .json-toolbar {
         position: absolute;
         top: 8px;
         right: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        z-index: 5;
+      }
+
+      .btn-json-tool {
         background-color: var(--bg-tertiary);
         border: 1px solid var(--border-color);
         color: var(--text-muted);
@@ -606,6 +707,31 @@
         cursor: pointer;
         font-size: 11px;
         transition: all 0.2s;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      .btn-json-tool:hover {
+        color: var(--text-main);
+        background-color: var(--bg-hover);
+        border-color: var(--text-dark);
+      }
+
+      .copy-btn {
+        background-color: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        transition: all 0.2s;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+
+      .json-container > .copy-btn {
+        position: absolute;
+        top: 8px;
+        right: 8px;
       }
 
       .copy-btn:hover {
@@ -1777,31 +1903,134 @@
         }
       }
 
-      // Helper: JSON Viewer with Highlight
+      // Helper: JSON Viewer with Highlight & Collapsible Tree
       function renderJSONViewer(body, copyBtnId) {
         if (body === null || body === undefined) {
           return '<p style="color: var(--text-dark); padding: 4px;">No body payload</p>';
         }
 
-        let displayStr = "";
-        let formattedHtml = "";
+        let parsedBody = body;
+        let isJson = false;
 
-        if (typeof body === "object") {
-          displayStr = JSON.stringify(body, null, 2);
-          formattedHtml = syntaxHighlightJson(displayStr);
-        } else {
-          displayStr = String(body);
-          formattedHtml = escapeHtml(displayStr);
+        if (typeof body === "string") {
+          const trimmed = body.trim();
+          if (
+            (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+            (trimmed.startsWith("[") && trimmed.endsWith("]"))
+          ) {
+            try {
+              parsedBody = JSON.parse(body);
+              isJson = true;
+            } catch (e) {
+              // Not JSON
+            }
+          }
+        } else if (typeof body === "object") {
+          isJson = true;
         }
 
+        if (isJson && parsedBody !== null && typeof parsedBody === "object") {
+          const displayStr = JSON.stringify(parsedBody, null, 2);
+          copyBuffers.set(copyBtnId, displayStr);
+          const treeHtml = buildJsonTreeHtml(parsedBody);
+          const wrapId = `json_wrap_${copyBtnId}`;
+
+          return `
+            <div class="json-container" id="${wrapId}">
+              <div class="json-toolbar">
+                <button class="btn-json-tool" onclick="collapseAllJson('${wrapId}')" title="Collapse all inner sections">Collapse All</button>
+                <button class="btn-json-tool" onclick="expandAllJson('${wrapId}')" title="Expand all sections">Expand All</button>
+                <button class="copy-btn" id="${copyBtnId}" onclick="copyToClipboardFromBuffer('${copyBtnId}')">Copy</button>
+              </div>
+              <div class="json-code"><code>${treeHtml}</code></div>
+            </div>
+          `;
+        }
+
+        const displayStr = String(body);
         copyBuffers.set(copyBtnId, displayStr);
 
         return `
-        <div class="json-container">
-          <button class="copy-btn" id="${copyBtnId}" onclick="copyToClipboardFromBuffer('${copyBtnId}')">Copy</button>
-          <pre class="json-code"><code>${formattedHtml}</code></pre>
-        </div>
-      `;
+          <div class="json-container">
+            <button class="copy-btn" id="${copyBtnId}" onclick="copyToClipboardFromBuffer('${copyBtnId}')">Copy</button>
+            <pre class="json-code"><code>${escapeHtml(displayStr)}</code></pre>
+          </div>
+        `;
+      }
+
+      function buildJsonTreeHtml(value) {
+        if (value === null) {
+          return '<span class="json-null">null</span>';
+        }
+        const type = typeof value;
+        if (type === "boolean") {
+          return `<span class="json-boolean">${value}</span>`;
+        }
+        if (type === "number") {
+          return `<span class="json-number">${value}</span>`;
+        }
+        if (type === "string") {
+          return `<span class="json-string">${escapeHtml(JSON.stringify(value))}</span>`;
+        }
+        if (Array.isArray(value)) {
+          if (value.length === 0) {
+            return '<span class="json-bracket">[]</span>';
+          }
+          let itemsHtml = "";
+          for (let i = 0; i < value.length; i++) {
+            const isLast = i === value.length - 1;
+            const comma = isLast ? "" : '<span class="json-comma">,</span>';
+            itemsHtml += `<div class="json-line">${buildJsonTreeHtml(value[i])}${comma}</div>`;
+          }
+          const count = value.length;
+          const countLabel = count === 1 ? "1 item" : `${count} items`;
+          return `<span class="json-collapsible"><span class="json-toggle-btn" onclick="toggleJsonNode(this)" title="Toggle collapse">▼</span><span class="json-bracket json-open-bracket" onclick="toggleJsonNode(this)">[</span><span class="json-placeholder" onclick="toggleJsonNode(this)" title="${countLabel} - Click to expand">[...]</span><div class="json-block">${itemsHtml}</div><span class="json-bracket json-close-bracket">]</span></span>`;
+        }
+        if (type === "object") {
+          const keys = Object.keys(value);
+          if (keys.length === 0) {
+            return '<span class="json-bracket">{}</span>';
+          }
+          let itemsHtml = "";
+          for (let i = 0; i < keys.length; i++) {
+            const k = keys[i];
+            const isLast = i === keys.length - 1;
+            const comma = isLast ? "" : '<span class="json-comma">,</span>';
+            const keyHtml = `<span class="json-key">${escapeHtml(JSON.stringify(k))}</span>: `;
+            itemsHtml += `<div class="json-line">${keyHtml}${buildJsonTreeHtml(value[k])}${comma}</div>`;
+          }
+          const count = keys.length;
+          const countLabel = count === 1 ? "1 key" : `${count} keys`;
+          return `<span class="json-collapsible"><span class="json-toggle-btn" onclick="toggleJsonNode(this)" title="Toggle collapse">▼</span><span class="json-bracket json-open-bracket" onclick="toggleJsonNode(this)">{</span><span class="json-placeholder" onclick="toggleJsonNode(this)" title="${countLabel} - Click to expand">{...}</span><div class="json-block">${itemsHtml}</div><span class="json-bracket json-close-bracket">}</span></span>`;
+        }
+        return escapeHtml(String(value));
+      }
+
+      function toggleJsonNode(el) {
+        const collapsible = el.closest(".json-collapsible");
+        if (collapsible) {
+          collapsible.classList.toggle("collapsed");
+        }
+      }
+
+      function collapseAllJson(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const nodes = container.querySelectorAll(".json-collapsible");
+        nodes.forEach((node, index) => {
+          if (index > 0) {
+            node.classList.add("collapsed");
+          }
+        });
+      }
+
+      function expandAllJson(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const nodes = container.querySelectorAll(".json-collapsible");
+        nodes.forEach((node) => {
+          node.classList.remove("collapsed");
+        });
       }
 
       // JSON syntax highlighting
