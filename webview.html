@@ -706,6 +706,283 @@
         color: var(--status-success);
         flex-shrink: 0;
       }
+
+      /* Sidebar Filter Tabs */
+      .sidebar-filter-tabs {
+        display: flex;
+        background-color: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-color);
+        padding: 6px 10px;
+        gap: 6px;
+      }
+
+      .sidebar-tab {
+        flex: 1;
+        background-color: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        padding: 6px 8px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 600;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .sidebar-tab:hover {
+        background-color: var(--bg-hover);
+        color: var(--text-main);
+      }
+
+      .sidebar-tab.active {
+        background-color: var(--bg-tertiary);
+        border-color: var(--accent-color);
+        color: var(--text-main);
+        box-shadow: 0 0 8px rgba(140, 82, 255, 0.2);
+      }
+
+      .tab-badge {
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        color: var(--text-muted);
+        font-size: 10px;
+        padding: 1px 6px;
+        border-radius: 10px;
+        min-width: 18px;
+        text-align: center;
+        font-weight: 700;
+      }
+
+      .sidebar-tab.active .tab-badge {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+        color: #ffffff;
+      }
+
+      .tab-badge.badge-blocked-count {
+        background-color: rgba(239, 83, 80, 0.15);
+        border-color: rgba(239, 83, 80, 0.3);
+        color: #ef5350;
+      }
+
+      .sidebar-tab.active .tab-badge.badge-blocked-count {
+        background-color: #ef5350;
+        border-color: #ef5350;
+        color: #ffffff;
+      }
+
+      /* Blocked Notification Banner */
+      .blocked-notice-banner {
+        background-color: rgba(239, 83, 80, 0.08);
+        border-bottom: 1px solid rgba(239, 83, 80, 0.2);
+        padding: 6px 12px;
+        font-size: 11px;
+        color: #ff9997;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .blocked-notice-banner a {
+        color: #ff7674;
+        text-decoration: underline;
+        cursor: pointer;
+        font-weight: 600;
+      }
+
+      .blocked-notice-banner a:hover {
+        color: #ffffff;
+      }
+
+      /* Blocked Rules Section */
+      .blocked-rules-card {
+        background-color: rgba(239, 83, 80, 0.04);
+        border-bottom: 1px solid var(--border-color);
+        padding: 10px 12px;
+        max-height: 180px;
+        overflow-y: auto;
+      }
+
+      .blocked-rules-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+
+      .blocked-rules-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #ef5350;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .blocked-rule-chip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background-color: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        padding: 4px 8px;
+        margin-bottom: 5px;
+        font-size: 11px;
+        gap: 8px;
+      }
+
+      .blocked-rule-pattern {
+        font-family: monospace;
+        color: var(--text-main);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        flex: 1;
+        font-size: 11px;
+      }
+
+      .btn-chip-unblock {
+        background: transparent;
+        border: 1px solid transparent;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 2px 6px;
+        font-size: 11px;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        transition: all 0.15s;
+        flex-shrink: 0;
+      }
+
+      .btn-chip-unblock:hover {
+        background-color: rgba(76, 175, 80, 0.15);
+        border-color: rgba(76, 175, 80, 0.3);
+        color: var(--status-success);
+      }
+
+      .btn-xs {
+        padding: 2px 7px;
+        font-size: 10px;
+        border-radius: 4px;
+        height: 20px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        background-color: var(--bg-tertiary);
+        color: var(--text-muted);
+        border: 1px solid var(--border-color);
+        cursor: pointer;
+        transition: all 0.15s;
+      }
+
+      .btn-xs:hover {
+        background-color: var(--bg-hover);
+        color: var(--text-main);
+      }
+
+      .btn-unblock-all {
+        color: #ef5350;
+        border-color: rgba(239, 83, 80, 0.3);
+      }
+
+      .btn-unblock-all:hover {
+        background-color: rgba(239, 83, 80, 0.15);
+        color: #ff7674;
+      }
+
+      .badge-blocked-tag {
+        background-color: rgba(239, 83, 80, 0.18);
+        border: 1px solid rgba(239, 83, 80, 0.4);
+        color: #ef5350;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      /* Tooltip */
+      .tooltip-container {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .tooltip-box {
+        visibility: hidden;
+        opacity: 0;
+        position: absolute;
+        bottom: calc(100% + 8px);
+        right: 0;
+        transform: translateY(4px);
+        background-color: #1e1e24;
+        color: #e1e1e6;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 6px 10px;
+        font-size: 11px;
+        font-weight: 400;
+        line-height: 1.4;
+        white-space: normal;
+        width: 230px;
+        text-align: left;
+        z-index: 1000;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        pointer-events: none;
+        transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+
+      .tooltip-box::after {
+        content: "";
+        position: absolute;
+        top: 100%;
+        right: 20px;
+        border-width: 5px;
+        border-style: solid;
+        border-color: #1e1e24 transparent transparent transparent;
+      }
+
+      .tooltip-container:hover .tooltip-box {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      /* Block / Unblock Buttons */
+      .btn-block {
+        background-color: rgba(239, 83, 80, 0.12);
+        border: 1px solid rgba(239, 83, 80, 0.4);
+        color: #ef5350;
+        font-weight: 500;
+      }
+
+      .btn-block:hover {
+        background-color: rgba(239, 83, 80, 0.22);
+        border-color: #ef5350;
+        color: #ff7674;
+      }
+
+      .btn-unblock {
+        background-color: rgba(76, 175, 80, 0.12);
+        border: 1px solid rgba(76, 175, 80, 0.4);
+        color: #4caf50;
+        font-weight: 500;
+      }
+
+      .btn-unblock:hover {
+        background-color: rgba(76, 175, 80, 0.22);
+        border-color: #4caf50;
+        color: #81c784;
+      }
     </style>
   </head>
   <body>
@@ -765,6 +1042,29 @@
       <div class="workspace">
         <!-- Requests list sidebar -->
         <div class="sidebar">
+          <div class="sidebar-filter-tabs" id="sidebarFilterTabs" style="display: none;">
+            <button class="sidebar-tab active" id="tabLogs" onclick="switchSidebarFilter('all')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="8" y1="6" x2="21" y2="6"></line>
+                <line x1="8" y1="12" x2="21" y2="12"></line>
+                <line x1="8" y1="18" x2="21" y2="18"></line>
+                <line x1="3" y1="6" x2="3.01" y2="6"></line>
+                <line x1="3" y1="12" x2="3.01" y2="12"></line>
+                <line x1="3" y1="18" x2="3.01" y2="18"></line>
+              </svg>
+              <span>Logs</span>
+              <span class="tab-badge" id="badgeAllCount">0</span>
+            </button>
+            <button class="sidebar-tab" id="tabBlocked" onclick="switchSidebarFilter('blocked')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+              </svg>
+              <span>Blocked</span>
+              <span class="tab-badge badge-blocked-count" id="badgeBlockedCount">0</span>
+            </button>
+          </div>
+          <div id="blockedRulesContainer" style="display: none;"></div>
           <div class="list-header">
             <div>Method</div>
             <div>Status</div>
@@ -827,6 +1127,106 @@
       let selectedRequestId = null;
       let currentTab = "headers";
       let searchQuery = "";
+      let sidebarFilter = "all"; // "all" | "blocked"
+
+      let blockedEndpoints = new Set();
+      try {
+        const savedBlocked = localStorage.getItem("rn_inspector_blocked_endpoints");
+        if (savedBlocked) {
+          const parsed = JSON.parse(savedBlocked);
+          if (Array.isArray(parsed)) {
+            blockedEndpoints = new Set(parsed);
+          }
+        }
+      } catch (e) {
+        console.error("Failed to load blocked endpoints", e);
+      }
+
+      function saveBlockedEndpoints() {
+        try {
+          localStorage.setItem(
+            "rn_inspector_blocked_endpoints",
+            JSON.stringify(Array.from(blockedEndpoints))
+          );
+        } catch (e) {
+          console.error("Failed to save blocked endpoints", e);
+        }
+      }
+
+      function getEndpointPattern(req) {
+        if (!req) return "";
+        const urlObj = parseUrl(req.url, req.baseURL);
+        try {
+          const u = new URL(urlObj.fullUrl);
+          return `${u.origin}${u.pathname}`;
+        } catch (e) {
+          return urlObj.fullUrl.split("?")[0].split("#")[0];
+        }
+      }
+
+      function isRequestBlocked(req) {
+        if (!req || blockedEndpoints.size === 0) return false;
+        const endpoint = getEndpointPattern(req);
+        const rawUrl = (req.url || "").split("?")[0].split("#")[0];
+        const urlObj = parseUrl(req.url, req.baseURL);
+        const pathOnly = (urlObj.displayPath || "").split("?")[0].split("#")[0];
+
+        for (const pattern of blockedEndpoints) {
+          if (pattern === endpoint || pattern === rawUrl || pattern === pathOnly) {
+            return true;
+          }
+          if (endpoint.startsWith(pattern) || rawUrl.startsWith(pattern) || (pathOnly && pathOnly.startsWith(pattern) && pattern.length > 1)) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function toggleBlockEndpoint(pattern) {
+        if (!pattern) return;
+        if (blockedEndpoints.has(pattern)) {
+          blockedEndpoints.delete(pattern);
+          saveBlockedEndpoints();
+          showToast(`Unblocked endpoint: ${pattern}`);
+        } else {
+          blockedEndpoints.add(pattern);
+          saveBlockedEndpoints();
+          showToast(`Blocked endpoint: ${pattern}`);
+        }
+        renderRequestList();
+        renderDetails();
+      }
+
+      function unblockEndpoint(pattern) {
+        if (blockedEndpoints.delete(pattern)) {
+          saveBlockedEndpoints();
+          showToast(`Unblocked: ${pattern}`);
+          renderRequestList();
+          renderDetails();
+        }
+      }
+
+      function unblockAllEndpoints() {
+        if (blockedEndpoints.size === 0) return;
+        const count = blockedEndpoints.size;
+        blockedEndpoints.clear();
+        saveBlockedEndpoints();
+        showToast(`Unblocked all (${count}) endpoints`);
+        renderRequestList();
+        renderDetails();
+      }
+
+      function switchSidebarFilter(filter) {
+        sidebarFilter = filter;
+        const tabLogs = document.getElementById("tabLogs");
+        const tabBlocked = document.getElementById("tabBlocked");
+        if (tabLogs && tabBlocked) {
+          tabLogs.classList.toggle("active", filter === "all");
+          tabBlocked.classList.toggle("active", filter === "blocked");
+        }
+        renderRequestList();
+      }
+
       const collapsedSections = {
         general: false,
         requestHeaders: false,
@@ -956,13 +1356,28 @@
 
       // Render Requests List
       function renderRequestList() {
-        const items = Array.from(requestsMap.values()).sort(
+        const allItems = Array.from(requestsMap.values()).sort(
           (a, b) => b.requestTimestamp - a.requestTimestamp,
         );
 
-        requestList.innerHTML = "";
+        let unblockedCount = 0;
+        let blockedCount = 0;
+        const filteredItems = [];
 
-        items.forEach((req) => {
+        allItems.forEach((req) => {
+          const blocked = isRequestBlocked(req);
+          if (blocked) {
+            blockedCount++;
+          } else {
+            unblockedCount++;
+          }
+
+          if (sidebarFilter === "blocked") {
+            if (!blocked) return;
+          } else {
+            if (blocked) return;
+          }
+
           // Filter search query
           const urlObj = parseUrl(req.url, req.baseURL);
           const fullUrl = urlObj.fullUrl.toLowerCase();
@@ -980,6 +1395,101 @@
             }
           }
 
+          filteredItems.push(req);
+        });
+
+        // Update badge counts
+        const badgeAll = document.getElementById("badgeAllCount");
+        const badgeBlocked = document.getElementById("badgeBlockedCount");
+        if (badgeAll) badgeAll.innerText = unblockedCount;
+        if (badgeBlocked) badgeBlocked.innerText = blockedCount;
+
+        // Show or hide sidebar filter tabs based on whether any endpoint is blocked
+        const filterTabs = document.getElementById("sidebarFilterTabs");
+        const hasBlocked = blockedEndpoints.size > 0 || blockedCount > 0;
+        if (filterTabs) {
+          if (hasBlocked) {
+            filterTabs.style.display = "flex";
+            const tabLogs = document.getElementById("tabLogs");
+            const tabBlocked = document.getElementById("tabBlocked");
+            if (tabLogs && tabBlocked) {
+              tabLogs.classList.toggle("active", sidebarFilter === "all");
+              tabBlocked.classList.toggle("active", sidebarFilter === "blocked");
+            }
+          } else {
+            filterTabs.style.display = "none";
+            sidebarFilter = "all";
+          }
+        }
+
+        // Blocked rules container in "blocked" tab
+        const rulesContainer = document.getElementById("blockedRulesContainer");
+        if (rulesContainer) {
+          if (sidebarFilter === "blocked") {
+            rulesContainer.style.display = "block";
+            let rulesHtml = `
+              <div class="blocked-rules-card">
+                <div class="blocked-rules-header">
+                  <div class="blocked-rules-title">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    </svg>
+                    <span>Blocked Rules (${blockedEndpoints.size})</span>
+                  </div>
+                  ${blockedEndpoints.size > 0 ? `<button class="btn btn-xs btn-unblock-all" onclick="unblockAllEndpoints()">Unblock All</button>` : ""}
+                </div>
+            `;
+            if (blockedEndpoints.size === 0) {
+              rulesHtml += `
+                <div style="color: var(--text-dark); font-size: 11px; padding: 4px 0;">
+                  No endpoints blocked yet. Select any request and click <em>Block Endpoint</em>.
+                </div>
+              `;
+            } else {
+              rulesHtml += `<div class="blocked-rules-list">`;
+              blockedEndpoints.forEach((pattern) => {
+                rulesHtml += `
+                  <div class="blocked-rule-chip">
+                    <span class="blocked-rule-pattern" title="${escapeHtml(pattern)}">${escapeHtml(pattern)}</span>
+                    <button class="btn-chip-unblock" onclick="unblockEndpoint('${escapeString(pattern)}')" title="Unblock this endpoint">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                      Unblock
+                    </button>
+                  </div>
+                `;
+              });
+              rulesHtml += `</div>`;
+            }
+            rulesHtml += `</div>`;
+            rulesContainer.innerHTML = rulesHtml;
+          } else {
+            rulesContainer.style.display = "none";
+          }
+        }
+
+        requestList.innerHTML = "";
+
+        if (filteredItems.length === 0) {
+          const emptyDiv = document.createElement("div");
+          emptyDiv.style.padding = "28px 16px";
+          emptyDiv.style.textAlign = "center";
+          emptyDiv.style.color = "var(--text-muted)";
+          emptyDiv.style.fontSize = "12px";
+          emptyDiv.innerHTML = sidebarFilter === "blocked"
+            ? (blockedEndpoints.size === 0
+                ? "No blocked endpoints.<br/><span style='color: var(--text-dark); font-size: 11px;'>Block an endpoint from the detail view to hide its logs.</span>"
+                : "No requests captured yet for blocked endpoints.")
+            : (searchQuery ? "No matching requests found." : "No network requests logged yet.");
+          requestList.appendChild(emptyDiv);
+          return;
+        }
+
+        filteredItems.forEach((req) => {
+          const urlObj = parseUrl(req.url, req.baseURL);
           const div = document.createElement("div");
           div.className = `request-item ${selectedRequestId === req.id ? "active" : ""}`;
           div.onclick = () => selectRequest(req.id);
@@ -999,11 +1509,11 @@
             : '<div class="loader"></div>';
 
           div.innerHTML = `
-          <div><span class="badge badge-method ${req.method}">${req.method}</span></div>
-          <div><span class="badge badge-status ${statusClass}">${statusText}</span></div>
-          <div class="request-url-path" title="${urlObj.fullUrl}">${urlObj.displayPath}</div>
-          <div class="request-duration">${timeText}</div>
-        `;
+            <div><span class="badge badge-method ${req.method}">${req.method}</span></div>
+            <div><span class="badge badge-status ${statusClass}">${statusText}</span></div>
+            <div class="request-url-path" title="${escapeHtml(urlObj.fullUrl)}">${escapeHtml(urlObj.displayPath)}</div>
+            <div class="request-duration">${timeText}</div>
+          `;
 
           requestList.appendChild(div);
         });
@@ -1040,6 +1550,8 @@
         }
 
         const urlObj = parseUrl(req.url, req.baseURL);
+        const isBlocked = isRequestBlocked(req);
+        const endpointPattern = getEndpointPattern(req);
 
         // Status badge
         let statusClass = "pending";
@@ -1056,20 +1568,45 @@
           <div class="detail-title-row">
             <span class="badge badge-method ${req.method}">${req.method}</span>
             <span class="badge badge-status ${statusClass}">${statusText}</span>
-            <div class="detail-url">${urlObj.fullUrl}</div>
+            ${isBlocked ? '<span class="badge badge-blocked-tag">BLOCKED</span>' : ''}
+            <div class="detail-url">${escapeHtml(urlObj.fullUrl)}</div>
           </div>
           <div class="detail-meta-row">
             <div style="display: flex; gap: 16px; align-items: center;">
               <span><strong>Time:</strong> ${new Date(req.requestTimestamp).toLocaleTimeString()}</span>
               <span><strong>Duration:</strong> ${req.duration ? `${req.duration} ms` : "Pending"}</span>
             </div>
-            <button id="copyCurlBtn" class="btn btn-sm" onclick="copyCurlCommand('${req.id}')">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-              </svg>
-              Copy as cURL
-            </button>
+            <div style="display: flex; gap: 8px; align-items: center; margin-left: auto;">
+              <button id="copyCurlBtn" class="btn btn-sm" onclick="copyCurlCommand('${req.id}')">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy as cURL
+              </button>
+              <div class="tooltip-container">
+                <button id="toggleBlockBtn" class="btn btn-sm ${isBlocked ? "btn-unblock" : "btn-block"}" onclick="toggleBlockEndpoint('${escapeString(endpointPattern)}')">
+                  ${isBlocked ? `
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                      <polyline points="9 12 11 14 15 10"></polyline>
+                    </svg>
+                    Unblock Endpoint
+                  ` : `
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    </svg>
+                    Block Endpoint
+                  `}
+                </button>
+                <div class="tooltip-box">
+                  ${isBlocked
+                    ? "<strong>Unblock Endpoint</strong><br/>Restore this endpoint so requests appear normally in the main network logs."
+                    : "<strong>Block Endpoint</strong><br/>Temporarily block this endpoint from appearing in main logs. Requests will be captured in the Blocked section."}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
