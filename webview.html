@@ -1047,22 +1047,22 @@
         visibility: hidden;
         opacity: 0;
         position: absolute;
-        bottom: calc(100% + 8px);
+        top: calc(100% + 8px);
         right: 0;
-        transform: translateY(4px);
+        transform: translateY(-4px);
         background-color: #1e1e24;
         color: #e1e1e6;
         border: 1px solid var(--border-color);
         border-radius: 6px;
-        padding: 6px 10px;
+        padding: 8px 12px;
         font-size: 11px;
         font-weight: 400;
-        line-height: 1.4;
+        line-height: 1.45;
         white-space: normal;
-        width: 230px;
+        width: 240px;
         text-align: left;
         z-index: 1000;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.7);
         pointer-events: none;
         transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       }
@@ -1070,11 +1070,11 @@
       .tooltip-box::after {
         content: "";
         position: absolute;
-        top: 100%;
-        right: 20px;
+        bottom: 100%;
+        right: 24px;
         border-width: 5px;
         border-style: solid;
-        border-color: #1e1e24 transparent transparent transparent;
+        border-color: transparent transparent #1e1e24 transparent;
       }
 
       .tooltip-container:hover .tooltip-box {
@@ -1938,8 +1938,7 @@
           return `
             <div class="json-container" id="${wrapId}">
               <div class="json-toolbar">
-                <button class="btn-json-tool" onclick="collapseAllJson('${wrapId}')" title="Collapse all inner sections">Collapse All</button>
-                <button class="btn-json-tool" onclick="expandAllJson('${wrapId}')" title="Expand all sections">Expand All</button>
+                <button class="btn-json-tool btn-toggle-all" id="toggle_all_${copyBtnId}" onclick="toggleAllJson('${wrapId}', this)" title="Collapse all inner sections">Collapse All</button>
                 <button class="copy-btn" id="${copyBtnId}" onclick="copyToClipboardFromBuffer('${copyBtnId}')">Copy</button>
               </div>
               <div class="json-code"><code>${treeHtml}</code></div>
@@ -2006,31 +2005,47 @@
         return escapeHtml(String(value));
       }
 
+      function updateJsonToggleBtnState(container) {
+        if (!container) return;
+        const toggleBtn = container.querySelector(".btn-toggle-all");
+        if (!toggleBtn) return;
+        const hasCollapsed = container.querySelector(".json-collapsible.collapsed") !== null;
+        if (hasCollapsed) {
+          toggleBtn.innerText = "Expand All";
+          toggleBtn.title = "Expand all sections";
+        } else {
+          toggleBtn.innerText = "Collapse All";
+          toggleBtn.title = "Collapse all sections";
+        }
+      }
+
       function toggleJsonNode(el) {
         const collapsible = el.closest(".json-collapsible");
         if (collapsible) {
           collapsible.classList.toggle("collapsed");
+          const container = collapsible.closest(".json-container");
+          if (container) {
+            updateJsonToggleBtnState(container);
+          }
         }
       }
 
-      function collapseAllJson(containerId) {
+      function toggleAllJson(containerId, btn) {
         const container = document.getElementById(containerId);
         if (!container) return;
+        const hasCollapsed = container.querySelector(".json-collapsible.collapsed") !== null;
         const nodes = container.querySelectorAll(".json-collapsible");
-        nodes.forEach((node, index) => {
-          if (index > 0) {
-            node.classList.add("collapsed");
-          }
-        });
-      }
 
-      function expandAllJson(containerId) {
-        const container = document.getElementById(containerId);
-        if (!container) return;
-        const nodes = container.querySelectorAll(".json-collapsible");
-        nodes.forEach((node) => {
-          node.classList.remove("collapsed");
-        });
+        if (hasCollapsed) {
+          nodes.forEach((node) => node.classList.remove("collapsed"));
+        } else {
+          nodes.forEach((node, index) => {
+            if (index > 0) {
+              node.classList.add("collapsed");
+            }
+          });
+        }
+        updateJsonToggleBtnState(container);
       }
 
       // JSON syntax highlighting
