@@ -175,12 +175,26 @@ function connect() {
 function sendLog(payload: Record<string, unknown>) {
   if (!__DEV__) return;
 
-  const message = JSON.stringify(payload);
-  if (isConnected && ws && ws.readyState === 1) {
-    ws.send(message);
-  } else {
-    logQueue.push(message);
-    connect();
+  try {
+    const message = JSON.stringify(payload);
+    if (isConnected && ws && ws.readyState === 1) {
+      ws.send(message);
+    } else {
+      logQueue.push(message);
+      connect();
+    }
+  } catch (e) {
+    try {
+      const safePayload = { ...payload, body: '[Unserializable body]' };
+      const safeMessage = JSON.stringify(safePayload);
+      if (isConnected && ws && ws.readyState === 1) {
+        ws.send(safeMessage);
+      } else {
+        logQueue.push(safeMessage);
+      }
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -350,6 +364,8 @@ function readBlobAsText(blob: any): Promise<string> {
 
 /// Global XMLHttpRequest interceptor
 let isIntercepting = false;
+let isExecutingFetch = false;
+
 export function startGlobalInterceptors() {
   if (isIntercepting) return;
 
@@ -369,6 +385,7 @@ export function startGlobalInterceptors() {
     _customUrl: string = '';
     _customHeaders: Record<string, string> = {};
     _customXhrLoggedByAxios: boolean = false;
+    _customXhrLoggedByFetch: boolean = false;
     _customResponseLogged: boolean = false;
 
     constructor() {
@@ -376,13 +393,17 @@ export function startGlobalInterceptors() {
 
       this._customRequestId = generateRequestId();
       this._customStartTime = Date.now();
+      if (isExecutingFetch) {
+        this._customXhrLoggedByFetch = true;
+      }
 
       // Register event listeners to log response when request completes
       const logResponse = async () => {
         if (
           this.readyState === 4 &&
           !this._customResponseLogged &&
-          !this._customXhrLoggedByAxios
+          !this._customXhrLoggedByAxios &&
+          !this._customXhrLoggedByFetch
         ) {
           this._customResponseLogged = true;
 
@@ -465,6 +486,9 @@ export function startGlobalInterceptors() {
       this._customMethod = method;
       this._customUrl = url;
       this._customHeaders = {};
+      if (isExecutingFetch) {
+        this._customXhrLoggedByFetch = true;
+      }
       // @ts-ignore
       return super.open(method, url, ...args);
     }
@@ -484,6 +508,10 @@ export function startGlobalInterceptors() {
       // @ts-ignore
       this._xhrLogged = true;
 
+      if (isExecutingFetch) {
+        this._customXhrLoggedByFetch = true;
+      }
+
       const isLoggedByAxios =
         this._customHeaders &&
         (this._customHeaders['X-Logged-By-Axios'] ||
@@ -501,7 +529,7 @@ export function startGlobalInterceptors() {
         }
       }
 
-      if (!this._customXhrLoggedByAxios) {
+      if (!this._customXhrLoggedByAxios && !this._customXhrLoggedByFetch) {
         networkLogger.logGenericRequest({
           id: this._customRequestId,
           url: this._customUrl,
@@ -540,89 +568,204 @@ export function startGlobalFetchInterceptor() {
     let headers: Record<string, string> = {};
     let body: any = undefined;
 
+    // 1. Safe URL & Method extraction (supports string, URL object, Request object)
     try {
       if (typeof input === 'string') {
         url = input;
       } else if (input && typeof input === 'object') {
         if (typeof input.url === 'string') {
           url = input.url;
+        } else if (typeof input.href === 'string') {
+          url = input.href;
         } else if (typeof input.toString === 'function') {
-          url = input.toString();
+          const str = input.toString();
+          if (str !== '[object Object]') {
+            url = str;
+          }
         }
         if (input.method) {
           method = input.method;
         }
       }
+    } catch {
+      // Fallback
+    }
 
-      // Ignore Metro, WebSocket, Inspector server, symbolicate, hot reload calls
-      if (
-        !url ||
-        url.includes(':19796') ||
-        url.includes(':8081') ||
-        url.includes('/hot') ||
-        url.includes('/symbolicate') ||
-        url.includes('/message')
-      ) {
-        return originalFetch(input, init);
+    // 2. Ignore Metro bundler, HMR, and Inspector server traffic only
+    const isInternalTraffic =
+      !url ||
+      url.includes(':19796') || // Inspector WebSocket / server port
+      url.includes(':8081') ||  // Standard Metro port
+      url.includes(':8082') ||  // Alternate Metro port
+      url.includes('/symbolicate') || // Metro error symbolicator
+      url.includes('/open-debugger') ||
+      url.includes('/inspector/device');
+
+    if (isInternalTraffic) {
+      return originalFetch(input, init);
+    }
+
+    // 3. Extract method and headers safely
+    try {
+      if (init?.method) method = init.method;
+
+      const rawHeaders =
+        init?.headers ||
+        (input && typeof input === 'object' ? input.headers : undefined);
+      if (rawHeaders) {
+        if (typeof rawHeaders.forEach === 'function') {
+          rawHeaders.forEach((value: string, key: string) => {
+            headers[key] = value;
+          });
+        } else if (Array.isArray(rawHeaders)) {
+          rawHeaders.forEach(([key, value]: [string, string]) => {
+            headers[key] = value;
+          });
+        } else if (typeof rawHeaders === 'object') {
+          Object.keys(rawHeaders).forEach(k => {
+            headers[k] = String(rawHeaders[k]);
+          });
+        }
       }
 
-      if (init) {
-        if (init.method) method = init.method;
-        if (init.headers) {
-          if (typeof init.headers.forEach === 'function') {
-            init.headers.forEach((value: string, key: string) => {
-              headers[key] = value;
-            });
-          } else if (Array.isArray(init.headers)) {
-            init.headers.forEach(([key, value]: [string, string]) => {
-              headers[key] = value;
-            });
-          } else if (typeof init.headers === 'object') {
-            Object.keys(init.headers).forEach(k => {
-              headers[k] = String(init.headers[k]);
-            });
-          }
-        }
-        if (init.body !== undefined) {
-          body = init.body;
-        }
+      if (init?.body !== undefined) {
+        body = init.body;
       }
+    } catch {
+      // Ignore header/body extraction issues
+    }
 
-      // Format body
-      let parsedBody = body;
-      if (typeof body === 'string') {
+    // 4. Format body safely (including FormData & Hermes minified classes)
+    let parsedBody: any = body;
+    try {
+      const isFormData =
+        (typeof (global as any).FormData !== 'undefined' &&
+          body instanceof (global as any).FormData) ||
+        (body &&
+          typeof body === 'object' &&
+          (body.constructor?.name === 'FormData' ||
+            Array.isArray((body as any)._parts)));
+
+      if (isFormData) {
+        if (body && Array.isArray((body as any)._parts)) {
+          const partsSummary = (body as any)._parts.map(
+            ([key, val]: [string, any]) => {
+              if (val && typeof val === 'object' && val.uri) {
+                return `${key}: [File: ${val.name || val.uri}]`;
+              }
+              return `${key}: ${typeof val === 'object' ? '[Object]' : val}`;
+            },
+          );
+          parsedBody = `[FormData: ${partsSummary.join(', ')}]`;
+        } else {
+          parsedBody = '[FormData]';
+        }
+      } else if (typeof body === 'string') {
         try {
           parsedBody = JSON.parse(body);
         } catch {
           parsedBody = body;
         }
-      } else if (body && typeof body === 'object') {
-        if (body.constructor && body.constructor.name === 'FormData') {
-          parsedBody = '[FormData]';
-        }
       }
+    } catch {
+      parsedBody = '[Unparsable Body]';
+    }
 
-      const id = generateRequestId();
-      const startTime = Date.now();
+    const id = generateRequestId();
+    const startTime = Date.now();
 
+    try {
       networkLogger.logGenericRequest({
         id,
         url,
-        method: method.toUpperCase(),
+        method: (method || 'GET').toUpperCase(),
         headers,
         body: parsedBody,
         timestamp: startTime,
       });
+    } catch {
+      // Don't let logging errors break application code
+    }
 
+    // 5. Execute original fetch
+    let response: any;
+    try {
+      isExecutingFetch = true;
+      response = await originalFetch(input, init);
+    } catch (err: any) {
+      const duration = Date.now() - startTime;
       try {
-        const response = await originalFetch(input, init);
-        const duration = Date.now() - startTime;
+        networkLogger.logGenericResponse({
+          id,
+          status: 0,
+          headers: {},
+          body: err?.message || 'Network Error',
+          duration,
+          isError: true,
+        });
+      } catch {
+        // ignore
+      }
+      // Re-throw directly without retrying
+      throw err;
+    } finally {
+      isExecutingFetch = false;
+    }
+
+    // 6. Process response asynchronously in background (ZERO blocking lag for caller!)
+    const duration = Date.now() - startTime;
+    const status = response?.status || 0;
+    const isError = status === 0 || status >= 400;
+
+    // Clone response immediately while body stream is fresh
+    let clonedResponse: any = null;
+    try {
+      if (typeof response.clone === 'function') {
+        clonedResponse = response.clone();
+      }
+    } catch {
+      // Stream may be already consumed or not cloneable
+    }
+
+    (async () => {
+      try {
+        const responseHeaders: Record<string, string> = {};
+        if (response.headers && typeof response.headers.forEach === 'function') {
+          response.headers.forEach((val: string, key: string) => {
+            responseHeaders[key] = val;
+          });
+        } else if (response.headers && typeof response.headers === 'object') {
+          Object.keys(response.headers).forEach(k => {
+            responseHeaders[k] = String(response.headers[k]);
+          });
+        }
+
+        const contentType = (
+          (typeof response.headers?.get === 'function'
+            ? response.headers.get('content-type')
+            : '') ||
+          responseHeaders['content-type'] ||
+          responseHeaders['Content-Type'] ||
+          ''
+        ).toLowerCase();
+
+        const isBinary =
+          contentType.includes('image/') ||
+          contentType.includes('audio/') ||
+          contentType.includes('video/') ||
+          contentType.includes('application/octet-stream') ||
+          contentType.includes('application/pdf') ||
+          contentType.includes('application/zip');
 
         let responseBody: any = null;
-        try {
-          if (typeof response.clone === 'function') {
-            const cloned = response.clone();
-            const text = await cloned.text();
+
+        if (isBinary) {
+          responseBody = `[Binary: ${contentType || 'blob'}]`;
+        } else if (status === 204 || status === 304) {
+          responseBody = null;
+        } else if (clonedResponse) {
+          try {
+            const text = await clonedResponse.text();
             if (text) {
               if (text.length > 500000) {
                 responseBody = text.slice(0, 500000) + '... [Truncated]';
@@ -634,54 +777,37 @@ export function startGlobalFetchInterceptor() {
                 }
               }
             }
+          } catch {
+            responseBody = '[Response stream already consumed or binary]';
           }
-        } catch {
-          responseBody = '[Response stream already consumed or binary]';
         }
-
-        const responseHeaders: Record<string, string> = {};
-        try {
-          if (response.headers && typeof response.headers.forEach === 'function') {
-            response.headers.forEach((val: string, key: string) => {
-              responseHeaders[key] = val;
-            });
-          }
-        } catch {
-          // ignore
-        }
-
-        const status = response.status;
-        const isError = status === 0 || status >= 400;
 
         networkLogger.logGenericResponse({
           id,
-          status: status || 0,
+          status,
           headers: responseHeaders,
-          body: responseBody || (isError ? 'Network Error' : null),
+          body:
+            responseBody !== null && responseBody !== undefined
+              ? responseBody
+              : isError
+                ? 'Network Error'
+                : null,
           duration,
           isError,
         });
-
-        return response;
-      } catch (err: any) {
-        const duration = Date.now() - startTime;
-        networkLogger.logGenericResponse({
-          id,
-          status: 0,
-          headers: {},
-          body: err?.message || 'Network Error',
-          duration,
-          isError: true,
-        });
-        throw err;
+      } catch {
+        // Prevent background logging errors from affecting runtime
       }
-    } catch {
-      return originalFetch(input, init);
-    }
+    })();
+
+    return response;
   };
 
   (global as any).fetch = interceptedFetch;
   (globalThis as any).fetch = interceptedFetch;
+  if (typeof window !== 'undefined' && (window as any).fetch) {
+    (window as any).fetch = interceptedFetch;
+  }
 }
 
 // Auto-connect and start global interception in development mode on import
